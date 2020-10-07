@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  registry:
+    image: registry:2.7.1
+    ports:
+      - target: 5000
+        published: 5000
+        protocol: tcp
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
