@@ -7,7 +7,8 @@ from fastapi.requests import Request
 from fastapi.responses import JSONResponse
 from motor.motor_asyncio import AsyncIOMotorCollection
 
-from app.models.post import PostList, PostData, PostCreation, PostDataResponse, PostOwner, PostUpdate
+from app.models.post import PostList, PostData, PostCreation, PostPreRelationships, PostUpdate
+from app.models.user import UserRelationship
 from app.mongo import Mongo
 from app.responses import get_responses
 from app.types.object_id import ObjectIdStr
@@ -31,7 +32,7 @@ async def add_owner(data: dict) -> None:
     """
     data.update({
         "relationships": {
-            "owner": await Mongo.get_relationship("user", "email", data.pop("owner"), PostOwner)
+            "owner": await Mongo.get_relationship("user", "email", data.pop("owner"), UserRelationship)
         }
     })
 
@@ -61,7 +62,7 @@ async def get_posts(
         query: Optional[str] = Query(None, description="Search by message")
 ) -> dict:
     filters = Mongo.get_regex_filters(query, {"message"})
-    result: dict = await Mongo.list(COLLECTION, PostDataResponse, request, page, records_per_page, filters)
+    result: dict = await Mongo.list(COLLECTION, PostPreRelationships, request, page, records_per_page, filters)
 
     for post in result["data"]:
         await add_owner(post)
@@ -76,7 +77,7 @@ async def get_posts(
     status_code=status.HTTP_201_CREATED
 )
 async def create_post(post_information: PostCreation, request: Request) -> JSONResponse:
-    response: JSONResponse = await Mongo.create(COLLECTION, post_information, PostDataResponse, request)
+    response: JSONResponse = await Mongo.create(COLLECTION, post_information, PostPreRelationships, request)
     if response.status_code == status.HTTP_201_CREATED:
         await add_relationships(response)
     return response
@@ -91,13 +92,13 @@ async def create_post(post_information: PostCreation, request: Request) -> JSONR
 async def get_post(
         post_id: ObjectIdStr = Path(..., description="Post ID", example="5f43825c66f4c0e20cd17dc3")
 ) -> JSONResponse:
-    response = await Mongo.get_by__id(COLLECTION, post_id, PostDataResponse)
+    response = await Mongo.get_by__id(COLLECTION, post_id, PostPreRelationships)
     if response.status_code == status.HTTP_200_OK:
         await add_relationships(response)
     return response
 
 
-@router.put(
+@router.patch(
     "/{post_id}",
     summary="Update a post by post ID.",
     response_model=PostData,
@@ -105,10 +106,10 @@ async def get_post(
 )
 async def update_post(
         *,
-        post_id: str = Path(..., description="Post ID", example="5f43825c66f4c0e20cd17dc3"),
+        post_id: ObjectIdStr = Path(..., description="Post ID", example="5f43825c66f4c0e20cd17dc3"),
         post_information: PostUpdate
 ) -> JSONResponse:
-    response = await Mongo.update_by__id(COLLECTION, post_id, post_information, PostDataResponse)
+    response = await Mongo.update_by__id(COLLECTION, post_id, post_information, PostPreRelationships)
     if response.status_code == status.HTTP_200_OK:
         await add_relationships(response)
     return response
@@ -121,7 +122,7 @@ async def update_post(
     status_code=status.HTTP_204_NO_CONTENT
 )
 async def delete_post(
-        post_id: str = Path(..., description="Post ID", example="5f43825c66f4c0e20cd17dc3")
+        post_id: ObjectIdStr = Path(..., description="Post ID", example="5f43825c66f4c0e20cd17dc3")
 ) -> JSONResponse:
     response = await Mongo.delete_by__id(COLLECTION, post_id)
     if response.status_code == status.HTTP_200_OK:

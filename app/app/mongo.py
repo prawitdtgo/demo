@@ -96,7 +96,7 @@ class Mongo:
                              data_model: Type[BaseModel]) -> dict:
         """Get a document.
 
-        :param collection: Collection
+        :param collection: Collection reference
         :param primary_key: Primary key
         :param primary_value: Primary key's value
         :param data_model: Data model
@@ -112,7 +112,7 @@ class Mongo:
                     data_model: Type[BaseModel]) -> JSONResponse:
         """Get a document.
 
-        :param collection: Collection
+        :param collection: Collection reference
         :param primary_key: Primary key
         :param primary_value: Primary key's value
         :param data_model: Data model
@@ -136,7 +136,7 @@ class Mongo:
             * links - Pagination links
             * meta - Meta information
 
-        :param collection: Collection
+        :param collection: Collection reference
         :param projection_model: Projection model
         :param request: HTTP request
         :param page: Page number
@@ -185,7 +185,7 @@ class Mongo:
                      data_model: Type[BaseModel], request: Request) -> JSONResponse:
         """Create a document.
 
-        :param collection: Collection
+        :param collection: Collection reference
         :param information: Information to create
         :param data_model: Data model
         :param request: HTTP request
@@ -206,14 +206,11 @@ class Mongo:
                          data_model: Type[BaseModel]) -> JSONResponse:
         """Get a document by _id.
 
-        :param collection: Collection
+        :param collection: Collection reference
         :param _id: _id field's value which will be converted to ObjectId type before search in the specified collection
         :param data_model: Data model
         :return: Document
         """
-        if not ObjectId.is_valid(_id):
-            return get_json_response(status.HTTP_404_NOT_FOUND)
-
         return await cls.__get(collection, "_id", ObjectId(_id), data_model)
 
     @classmethod
@@ -221,7 +218,7 @@ class Mongo:
                   data_model: Type[BaseModel]) -> JSONResponse:
         """Get a document.
 
-        :param collection: Collection
+        :param collection: Collection reference
         :param primary_key: Primary key
         :param primary_value: Primary key's value
         :param data_model: Data model
@@ -232,35 +229,35 @@ class Mongo:
     @classmethod
     async def update_by__id(cls, collection: AsyncIOMotorCollection, _id: str, information: ClassVar[BaseModel],
                             data_model: Type[BaseModel]) -> JSONResponse:
-        """Update a document by _id.
+        """Update a document by _id. Skip all fields that have None value.
 
-        :param collection: Collection
+        :param collection: Collection reference
         :param _id: _id field's value which will be converted to ObjectId type before search in the specified collection
         :param information: Information to update
         :param data_model: Data model
         :return: Updated document
         """
-        if not ObjectId.is_valid(_id):
-            return get_json_response(status.HTTP_404_NOT_FOUND)
-
         return await cls.update(collection, "_id", ObjectId(_id), information, data_model)
 
     @classmethod
     async def update(cls, collection: AsyncIOMotorCollection, primary_key: str, primary_value: Any,
                      information: ClassVar[BaseModel], data_model: Type[BaseModel]) -> JSONResponse:
-        """Update a document.
+        """Update a document. Skip all fields that have None value.
 
-        :param collection: Collection
+        :param collection: Collection reference
         :param primary_key: Primary key
         :param primary_value: Primary key's value
         :param information: Information to update
         :param data_model: Data model
         :return: Updated document
         """
-        result: UpdateResult = await collection.update_one({primary_key: primary_value}, {"$set": information.dict()})
+        updated_information: dict = dict(filter(lambda items: items[1] is not None, information.dict().items()))
 
-        if result.modified_count == 1:
-            await collection.update_one({primary_key: primary_value}, {"$set": {"updated_at": datetime.now()}})
+        if len(updated_information) > 0:
+            result: UpdateResult = await collection.update_one({primary_key: primary_value},
+                                                               {"$set": updated_information})
+            if result.modified_count == 1:
+                await collection.update_one({primary_key: primary_value}, {"$set": {"updated_at": datetime.now()}})
 
         return await cls.__get(collection, primary_key, primary_value, data_model)
 
@@ -280,20 +277,17 @@ class Mongo:
     async def delete_by__id(cls, collection: AsyncIOMotorCollection, _id: str) -> JSONResponse:
         """Delete a document by _id.
 
-        :param collection: Collection
+        :param collection: Collection reference
         :param _id: _id field's value which will be converted to ObjectId type before search in the specified collection
         :return: Deletion result
         """
-        if not ObjectId.is_valid(_id):
-            return get_json_response(status.HTTP_404_NOT_FOUND)
-
         return cls.__get_deletion_json_response(await collection.delete_one({"_id": ObjectId(_id)}))
 
     @classmethod
     async def delete(cls, collection: AsyncIOMotorCollection, primary_key: str, primary_value: Any) -> JSONResponse:
         """Delete a document.
 
-        :param collection: Collection
+        :param collection: Collection reference
         :param primary_key: Primary key
         :param primary_value: Primary key's value
         :return: Deletion result

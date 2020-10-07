@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 import pytz
 
@@ -16,7 +17,7 @@ class DatetimeStr(str):
         yield cls.validate
 
     @classmethod
-    def validate(cls, value: datetime) -> str:
+    def validate(cls, value: Any) -> str:
         """Validate the specified value.
 
         :param value: Value
@@ -24,6 +25,6 @@ class DatetimeStr(str):
         :raise TypeError: If the specified value is not a datetime.
         """
         if not isinstance(value, datetime):
-            raise TypeError("This type must be a datetime.")
+            raise TypeError("%r is not a datetime." % value)
 
         return value.astimezone(pytz.timezone("Asia/Bangkok")).isoformat(timespec="seconds")
