@@ -1,0 +1,61 @@
+version: '3.8'
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile-app
+    image: 127.0.0.1:5000/demo-app:0.1.0
+    ports:
+      - target: 80
+        published: 80
+        protocol: tcp
+    depends_on:
+      - mongo
+    restart: on-failure
+    environment:
+      - MONGO_HOST=mongo
+      - MONGO_DATABASE_NAME=demo
+      - MONGO_DATABASE_USERNAME_FILE=/run/secrets/mongo-application-username
+      - MONGO_DATABASE_PASSWORD_FILE=/run/secrets/mongo-application-password
+    secrets:
+      - mongo-application-username
+      - mongo-application-password
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+  mongo:
+    build:
+      context: .
+      dockerfile: Dockerfile-mongo
+    image: 127.0.0.1:5000/demo-mongo:0.1.0
+    restart: on-failure
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME_FILE=/run/secrets/mongo-root-username
+      - MONGO_INITDB_ROOT_PASSWORD_FILE=/run/secrets/mongo-root-password
+      - MONGO_INITDB_DATABASE=demo
+      - MONGO_DATABASE_USERNAME_FILE=/run/secrets/mongo-application-username
+      - MONGO_DATABASE_PASSWORD_FILE=/run/secrets/mongo-application-password
+    volumes:
+      - mongo-data:/data/db
+    secrets:
+      - mongo-root-username
+      - mongo-root-password
+      - mongo-application-username
+      - mongo-application-password
+    deploy:
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+volumes:
+  mongo-data:
+secrets:
+  mongo-root-username:
+    file: mongodb-credentials/root-username.txt
+  mongo-root-password:
+    file: mongodb-credentials/root-password.txt
+  mongo-application-username:
+    file: mongodb-credentials/application-username.txt
+  mongo-application-password:
+    file: mongodb-credentials/application-password.txt

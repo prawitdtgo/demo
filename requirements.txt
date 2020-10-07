@@ -1,0 +1,5 @@
+fastapi >= 0.61.1
+motor >= 2.3.0
+mongodb-migrations >= 1.0.0
+email-validator >= 1.1.1
+pytz >= 2020.1
