@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile-app
-    image: 127.0.0.1:5000/demo-app:0.1.1
+    image: 127.0.0.1:5000/demo-app:0.1.2
     ports:
       - target: 80
         published: 80
@@ -29,7 +29,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile-mongo
-    image: 127.0.0.1:5000/demo-mongo:0.1.1
+    image: 127.0.0.1:5000/demo-mongo:0.1.2
     restart: on-failure
     environment:
       - MONGO_INITDB_ROOT_USERNAME_FILE=/run/secrets/mongo-root-username

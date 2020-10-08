@@ -1,6 +1,6 @@
 # Demo App
-This is a demonstration application that includes FastAPI framework and MongoDB connection in ORM concept.
-It supports deploying with Docker.
+This is a demonstration application that includes FastAPI framework, MongoDB database connections, 
+and a MongoDB database migration system. It supports deploying with Docker.
 
 ---
 
