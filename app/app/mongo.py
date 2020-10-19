@@ -4,7 +4,9 @@ from datetime import datetime
 from typing import Type, ClassVar, List, Tuple, Any
 
 import pymongo
+from app.responses import get_json_response
 from bson import ObjectId
+from environment import get_file_environment
 from fastapi import status
 from fastapi.encoders import jsonable_encoder
 from fastapi.requests import Request
@@ -13,9 +15,6 @@ from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection, Asyn
 from pydantic import BaseModel
 from pymongo import MongoClient
 from pymongo.results import DeleteResult, InsertOneResult, UpdateResult
-
-from app.responses import get_json_response
-from environment import get_file_environment
 
 
 class Mongo:
@@ -31,8 +30,8 @@ class Mongo:
     async def connect(cls) -> None:
         """Open the database connections.
         """
-        username: str = get_file_environment("MONGO_DATABASE_USERNAME_FILE")
-        password: str = get_file_environment("MONGO_DATABASE_PASSWORD_FILE")
+        username: str = await get_file_environment("MONGO_DATABASE_USERNAME_FILE")
+        password: str = await get_file_environment("MONGO_DATABASE_PASSWORD_FILE")
 
         cls.__client = AsyncIOMotorClient(
             host=cls.__host,
