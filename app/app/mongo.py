@@ -4,9 +4,7 @@ from datetime import datetime
 from typing import Type, ClassVar, List, Tuple, Any
 
 import pymongo
-from app.responses import get_json_response
 from bson import ObjectId
-from environment import get_file_environment
 from fastapi import status
 from fastapi.encoders import jsonable_encoder
 from fastapi.requests import Request
@@ -15,6 +13,9 @@ from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection, Asyn
 from pydantic import BaseModel
 from pymongo import MongoClient
 from pymongo.results import DeleteResult, InsertOneResult, UpdateResult
+
+from app.responses import Response
+from environment import get_file_environment
 
 
 class Mongo:
@@ -120,7 +121,7 @@ class Mongo:
         document: dict = await cls.__get_document(collection, primary_key, primary_value, data_model)
 
         if document is None:
-            return get_json_response(status.HTTP_404_NOT_FOUND)
+            return Response.get_json_response(status.HTTP_404_NOT_FOUND)
 
         return JSONResponse(jsonable_encoder({"data": data_model(**document)}))
 
@@ -268,7 +269,7 @@ class Mongo:
         :return: Deletion JSON response
         """
         if result.deleted_count == 0:
-            return get_json_response(status.HTTP_404_NOT_FOUND)
+            return Response.get_json_response(status.HTTP_404_NOT_FOUND)
 
         return JSONResponse(status_code=204)
 
