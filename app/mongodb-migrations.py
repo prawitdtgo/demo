@@ -3,9 +3,10 @@ import os
 from argparse import ArgumentParser, Namespace
 from urllib.parse import quote_plus
 
-from environment import get_file_environment
 from mongodb_migrations.cli import MigrationManager
 from mongodb_migrations.config import Configuration, Execution
+
+from app.environment import get_file_environment
 
 
 async def get_migration_configuration() -> Configuration:
