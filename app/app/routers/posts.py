@@ -10,7 +10,7 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 from app.models.post import PostList, PostData, PostCreation, PostPreRelationships, PostUpdate
 from app.models.user import UserRelationship
 from app.mongo import Mongo
-from app.responses import get_responses
+from app.responses import Response
 from app.types.object_id import ObjectIdStr
 
 router = APIRouter()
@@ -87,7 +87,7 @@ async def create_post(post_information: PostCreation, request: Request) -> JSONR
     "/{post_id}",
     summary="Get a post by post ID.",
     response_model=PostData,
-    responses=get_responses({status.HTTP_404_NOT_FOUND})
+    responses=Response.get_responses({status.HTTP_404_NOT_FOUND})
 )
 async def get_post(
         post_id: ObjectIdStr = Path(..., description="Post ID", example="5f43825c66f4c0e20cd17dc3")
@@ -102,7 +102,7 @@ async def get_post(
     "/{post_id}",
     summary="Update a post by post ID.",
     response_model=PostData,
-    responses=get_responses({status.HTTP_404_NOT_FOUND})
+    responses=Response.get_responses({status.HTTP_404_NOT_FOUND})
 )
 async def update_post(
         *,
@@ -118,7 +118,7 @@ async def update_post(
 @router.delete(
     "/{post_id}",
     summary="Delete a post by post ID.",
-    responses=get_responses({status.HTTP_404_NOT_FOUND}),
+    responses=Response.get_responses({status.HTTP_404_NOT_FOUND}),
     status_code=status.HTTP_204_NO_CONTENT
 )
 async def delete_post(

@@ -9,7 +9,7 @@ from pydantic import EmailStr
 
 from app.models.user import UserList, UserData, UserCreation, UserResponse, UserUpdate
 from app.mongo import Mongo
-from app.responses import get_responses
+from app.responses import Response
 
 router = APIRouter()
 COLLECTION: AsyncIOMotorCollection = NotImplemented
@@ -53,7 +53,7 @@ async def create_user(user_information: UserCreation, request: Request) -> JSONR
     "/{email}",
     summary="Get a user by email.",
     response_model=UserData,
-    responses=get_responses({status.HTTP_404_NOT_FOUND})
+    responses=Response.get_responses({status.HTTP_404_NOT_FOUND})
 )
 async def get_user(
         email: EmailStr = Path(..., description="Email", example="user@example.com")
@@ -65,7 +65,7 @@ async def get_user(
     "/{email}",
     summary="Update a user by email.",
     response_model=UserData,
-    responses=get_responses({status.HTTP_404_NOT_FOUND})
+    responses=Response.get_responses({status.HTTP_404_NOT_FOUND})
 )
 async def update_user(
         *,
@@ -78,7 +78,7 @@ async def update_user(
 @router.delete(
     "/{email}",
     summary="Delete a user by email.",
-    responses=get_responses({status.HTTP_404_NOT_FOUND}),
+    responses=Response.get_responses({status.HTTP_404_NOT_FOUND}),
     status_code=status.HTTP_204_NO_CONTENT
 )
 async def delete_user(

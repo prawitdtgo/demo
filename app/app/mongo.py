@@ -14,8 +14,8 @@ from pydantic import BaseModel
 from pymongo import MongoClient
 from pymongo.results import DeleteResult, InsertOneResult, UpdateResult
 
-from app.responses import get_json_response
-from environment import get_file_environment
+from app.environment import get_file_environment
+from app.responses import Response
 
 
 class Mongo:
@@ -31,8 +31,8 @@ class Mongo:
     async def connect(cls) -> None:
         """Open the database connections.
         """
-        username: str = get_file_environment("MONGO_DATABASE_USERNAME_FILE")
-        password: str = get_file_environment("MONGO_DATABASE_PASSWORD_FILE")
+        username: str = await get_file_environment("MONGO_DATABASE_USERNAME_FILE")
+        password: str = await get_file_environment("MONGO_DATABASE_PASSWORD_FILE")
 
         cls.__client = AsyncIOMotorClient(
             host=cls.__host,
@@ -121,7 +121,7 @@ class Mongo:
         document: dict = await cls.__get_document(collection, primary_key, primary_value, data_model)
 
         if document is None:
-            return get_json_response(status.HTTP_404_NOT_FOUND)
+            return Response.get_json_response(status.HTTP_404_NOT_FOUND)
 
         return JSONResponse(jsonable_encoder({"data": data_model(**document)}))
 
@@ -269,7 +269,7 @@ class Mongo:
         :return: Deletion JSON response
         """
         if result.deleted_count == 0:
-            return get_json_response(status.HTTP_404_NOT_FOUND)
+            return Response.get_json_response(status.HTTP_404_NOT_FOUND)
 
         return JSONResponse(status_code=204)
 
