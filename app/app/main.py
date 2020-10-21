@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI
 
 from app.mongo import Mongo
@@ -8,7 +10,7 @@ api_prefix = "/api/v1"
 app = FastAPI(
     title="Demo App",
     description="This is a demonstration application.",
-    version="0.1.0",
+    version=os.getenv("API_VERSION"),
     docs_url="/",
     redoc_url=None,
     openapi_url=api_prefix + "/openapi.json"
