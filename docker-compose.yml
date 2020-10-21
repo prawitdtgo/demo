@@ -13,6 +13,7 @@ services:
       - mongo
     restart: on-failure
     environment:
+      - API_VERSION=0.2.0
       - MONGO_HOST=mongo
       - MONGO_DATABASE_NAME=demo
       - MONGO_DATABASE_USERNAME_FILE=/run/secrets/mongo-application-username
