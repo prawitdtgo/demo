@@ -48,11 +48,11 @@ Run the following commands step by step.
 
 1. `docker-compose build`
 1. `docker-compose push`
-1. `docker stack deploy --compose-file docker-compose.yml --compose-file docker-compose.override.yml <stack name>`
+1. `docker-compose config | docker stack deploy -c - <stack name>`
 
     For example:
 
-    > docker stack deploy --compose-file docker-compose.yml --compose-file docker-compose.override.yml demo
+    > docker-compose config | docker stack deploy -c - demo
 
 #### To uninstall this application.
 Run `docker stack rm <stack name(s)>` command.
@@ -73,11 +73,11 @@ Run the following commands step by step.
 
 1. `docker-compose -f docker-compose.yml build`
 1. `docker-compose -f docker-compose.yml push`
-1. `docker stack deploy --compose-file docker-compose.yml <stack name>`
+1. `docker-compose -f docker-compose.yml config | docker stack deploy -c - <stack name>`
 
     For example:
     
-    > docker stack deploy --compose-file docker-compose.yml demo
+    > docker-compose -f docker-compose.yml config | docker stack deploy -c - demo
 
 #### To uninstall this application.
 Run `docker stack rm <stack name(s)>` command.
