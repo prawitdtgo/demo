@@ -5,86 +5,97 @@ and a MongoDB database migration system. It supports deploying with Docker.
 ---
 
 ## Prerequisites.
-1. Setup MongoDB credentials.
+1. Set up MongoDB credentials.
 
     This application will create a root role user and an application user in a fresh installation.
 
-    * Fill your root username in mongodb-credentials/root-username.txt
-    * Fill your root password in mongodb-credentials/root-password.txt.
-    * Fill your application username in mongodb-credentials/application-username.txt.
-    * Fill your application password in mongodb-credentials/application-password.txt.
+    * Fill your root username in ./mongodb-credentials/root-username.txt
+    * Fill your root password in ./mongodb-credentials/root-password.txt.
+    * Fill your application username in ./mongodb-credentials/application-username.txt.
+    * Fill your application password in ./mongodb-credentials/application-password.txt.
     
     For production environment, you should grant permission of those credential files to users whom can run docker
     and docker-compose commands only.
+
+1. Set up this application's certificate.
+    1. Copy your certificate into ./certificates and name it as dtgo.com.crt.
+    1. Copy your certificate's private key into ./certificates and name it as dtgo.com.key.
+1. Set up your DNS name following HOST environment's value in /.env.
+
+    You can set your local DNS in development environment.
+
+    For Windows example, append `127.0.0.1 web-services.dtgo.com` to C:\Windows\System32\drivers\etc\hosts.
 
 ---
 
 ## To deploy with docker-compose command.
 ### For development environment:
 #### To install/update this application.
-Run `docker-compose up -d --build` command.
+Run `docker-compose up -d` command.
+
+**Note:** To rebuild the images, use `docker-compose up -d --build` command.
+
 #### To uninstall this application.
 Run `docker-compose down` command.
 
 ### For production environment:
 #### To install/update this application.
-Run `docker-compose -f docker-compose.yml up -d` command.
+Run `docker-compose -f docker-compose.yml -f docker-compose.production.yml up -d` command.
 #### To uninstall this application.
-Run `docker-compose -f docker-compose.yml down` command.
+Run `docker-compose down` command.
 
 ---
 
 ## To deploy with docker stack command.
 _You have to run your Docker Engine in swarm mode._
-### For development environment:
-#### To install/update this application.
-Run the following commands step by step.
 
-1. `docker stack deploy --compose-file docker-registry.yml <stack name>` to create a local registry server.    
+### Prerequisites.
+1. Create a local registry server.
+
+    Run `docker stack deploy --compose-file docker-registry.yml <stack name>` command.
 
     For example:
 
-    > docker stack deploy --compose-file docker-registry.yml registry
+    > docker stack deploy --compose-file docker-registry.yml local-registry
+
+### For development environment:
+#### To install/update this application.
+Run the following command steps by steps.
 
 1. `docker-compose build`
 1. `docker-compose push`
-1. `docker-compose config | docker stack deploy -c - <stack name>`
+1. `docker-compose -f docker-compose.yml -f docker-stack.yml -f docker-stack.development.yml config
+    | docker stack deploy -c - <stack name>` command.
 
     For example:
 
-    > docker-compose config | docker stack deploy -c - demo
+    > docker-compose -f docker-compose.yml -f docker-stack.yml -f docker-stack.development.yml config
+    | docker stack deploy -c - demo
 
 #### To uninstall this application.
-Run `docker stack rm <stack name(s)>` command.
+Run `docker stack rm <stack name>` command.
 
-For example, if you would like to remove both of your application and your local registry server, just run the following
-command below.
-> docker stack rm demo registry
+For example:
+> docker stack rm demo
 
 ### For production environment:
 #### To install/update this application.
-Run the following commands step by step.
+Run the following command steps by steps.
 
-1. `docker stack deploy --compose-file docker-registry.yml <stack name>` to create a local registry server.    
-
-    For example:
-
-    > docker stack deploy --compose-file docker-registry.yml registry
-
-1. `docker-compose -f docker-compose.yml build`
-1. `docker-compose -f docker-compose.yml push`
-1. `docker-compose -f docker-compose.yml config | docker stack deploy -c - <stack name>`
+1. `docker-compose build`
+1. `docker-compose push`
+1. `docker-compose -f docker-compose.yml -f docker-stack.yml config
+    | docker stack deploy -c - <stack name>` command.
 
     For example:
-    
-    > docker-compose -f docker-compose.yml config | docker stack deploy -c - demo
+
+    > docker-compose -f docker-compose.yml -f docker-stack.yml config | docker stack deploy -c - demo
 
 #### To uninstall this application.
-Run `docker stack rm <stack name(s)>` command.
+Run `docker stack rm <stack name>` command.
 
-For example, if you would like to remove both of your application and your local registry server, just run the following
-command below.
-> docker stack rm demo registry
+For example:
+> docker stack rm demo
 
 ---
 
@@ -105,8 +116,8 @@ command below.
 ---
 
 ## How to see MongoDB database migrations usage.
-`docker exec $(docker ps --filter "name=<stack name>_app" --filter "status=running" -q -l)
-python /app/mongodb-migrations.py --help`
+Run `docker exec $(docker ps --filter "name=<stack name>_app" --filter "status=running" -q -l)
+python /app/mongodb-migrations.py --help` command in your Windows PowerShell or your Linux terminal.
 
 For example:
 
