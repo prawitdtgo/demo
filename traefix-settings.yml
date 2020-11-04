@@ -1,0 +1,4 @@
+tls:
+  certificates:
+    - certFile: /etc/traefix/certificates/dtgo.com.crt
+      keyFile: /etc/traefix/certificates/dtgo.com.key

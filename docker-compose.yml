@@ -5,10 +5,6 @@ services:
       context: .
       dockerfile: Dockerfile-app
     image: 127.0.0.1:5000/demo-app:${API_VERSION}
-    ports:
-      - target: 80
-        published: 80
-        protocol: tcp
     restart: on-failure
     environment:
       - API_VERSION=${API_VERSION}
@@ -19,11 +15,6 @@ services:
     secrets:
       - mongo-application-username
       - mongo-application-password
-    deploy:
-      replicas: 3
-      restart_policy:
-        condition: on-failure
-        max_attempts: 3
   mongo:
     build:
       context: .
@@ -43,10 +34,27 @@ services:
       - mongo-root-password
       - mongo-application-username
       - mongo-application-password
-    deploy:
-      restart_policy:
-        condition: on-failure
-        max_attempts: 3
+  reverse-proxy:
+    image: traefik:v2.3.2
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedByDefault=false
+      - --providers.file.directory=/etc/traefix
+      - --entryPoints.web.address=:80
+      - --entrypoints.web.http.redirections.entryPoint.to=websecure
+      - --entrypoints.web.http.redirections.entryPoint.scheme=https
+      - --entrypoints.websecure.address=:443
+    ports:
+      - target: 80
+        published: 80
+        protocol: tcp
+      - target: 443
+        published: 443
+        protocol: tcp
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./certificates:/etc/traefix/certificates
+      - ./traefix-settings.yml:/etc/traefix/traefix-settings.yml
 volumes:
   mongo-data:
 secrets:
