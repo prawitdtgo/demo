@@ -116,8 +116,8 @@ For example:
 ---
 
 ## How to see MongoDB database migrations usage.
-`docker exec $(docker ps --filter "name=<stack name>_app" --filter "status=running" -q -l)
-python /app/mongodb-migrations.py --help`
+Run `docker exec $(docker ps --filter "name=<stack name>_app" --filter "status=running" -q -l)
+python /app/mongodb-migrations.py --help` command in your Windows PowerShell or your Linux terminal.
 
 For example:
 
