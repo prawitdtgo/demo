@@ -1,9 +1,7 @@
-import logging
 import os
 import tempfile
 
 import pytest
-from _pytest.logging import LogCaptureFixture
 from pytest_mock import MockerFixture
 from typing.io import IO
 
@@ -12,52 +10,47 @@ from app.environment import get_file_environment
 pytestmark = pytest.mark.asyncio
 
 
-async def test_getting_file_environment(mocker: MockerFixture) -> None:
-    """Test getting a file environment.
-
-    :param mocker: Mocker fixture
+class TestEnvironment:
+    """This class handles all app.environment module test cases.
     """
-    environment_name = "test"
-    environment_value = "Hello World!"
 
-    file: IO = tempfile.NamedTemporaryFile(delete=False)
-    file.write(environment_value.encode())
-    file.close()
+    async def test_getting_file_environment(self, mocker: MockerFixture) -> None:
+        """Test getting a file environment.
 
-    mocker.patch.dict(os.environ, {environment_name: file.name})
+        :param mocker: Mocker fixture
+        """
+        environment_name: str = "test"
+        environment_value: str = "Hello World!"
 
-    assert await get_file_environment(environment_name) == environment_value
+        file: IO = tempfile.NamedTemporaryFile(delete=False)
+        file.write(environment_value.encode())
+        file.close()
 
-    os.remove(file.name)
+        mocker.patch.dict(os.environ, {environment_name: file.name})
 
+        assert await get_file_environment(environment_name) == environment_value
 
-async def test_getting_file_environment_with_non_existing_environment_variable(caplog: LogCaptureFixture) -> None:
-    """Test getting a file environment with a non existing environment variable.
+        os.remove(file.name)
 
-    :param caplog: Log capture fixture
-    """
-    environment_name = "test"
+    async def test_getting_file_environment_with_non_existing_environment_variable(self) -> None:
+        """Test getting a file environment with a non existing environment variable.
 
-    caplog.set_level(level=logging.ERROR)
+        """
+        environment_name: str = "test"
 
-    assert await get_file_environment(environment_name) == ""
+        with pytest.raises(ValueError, match=f"'{environment_name}' environment variable is not found."):
+            await get_file_environment(environment_name)
 
-    assert caplog.messages.pop() == "'{}' environment variable is not found.".format(environment_name)
+    async def test_getting_file_environment_with_non_existing_file(self, mocker: MockerFixture) -> None:
+        """Test getting a file environment with a non existing file.
 
+        :param mocker: Mocker fixture
+        """
+        environment_name: str = "test"
 
-async def test_getting_file_environment_with_non_existing_file(mocker: MockerFixture,
-                                                               caplog: LogCaptureFixture) -> None:
-    """Test getting a file environment with a non existing file.
+        mocker.patch.dict(os.environ, {environment_name: tempfile.gettempdir()})
 
-    :param mocker: Mocker fixture
-    :param caplog: Log capture fixture
-    """
-    environment_name = "test"
-
-    caplog.set_level(level=logging.ERROR)
-
-    mocker.patch.dict(os.environ, {environment_name: tempfile.gettempdir()})
-
-    assert await get_file_environment(environment_name) == ""
-
-    assert caplog.messages.pop() == "'{}' environment variable is not a file.".format(environment_name)
+        with pytest.raises(ValueError,
+                           match=f"'{environment_name}' environment variable's value is not an existing file path."
+                           ):
+            await get_file_environment(environment_name)

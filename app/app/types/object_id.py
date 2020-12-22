@@ -1,17 +1,15 @@
-from typing import Any
+from typing import Any, Generator
 
 from bson import ObjectId
 
 
 class ObjectIdStr(str):
     """This class handles converting an ObjectId to a string.
-
     """
 
     @classmethod
-    def __get_validators__(cls):
+    def __get_validators__(cls) -> Generator:
         """Get validators.
-
         """
         yield cls.validate
 

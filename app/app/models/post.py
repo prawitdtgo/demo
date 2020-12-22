@@ -1,10 +1,9 @@
 from typing import List, Optional, Any
 
-from pydantic import BaseModel, Field, EmailStr, validator
+from pydantic import BaseModel, Field, validator
 
 from app.models.pagination import Pagination
 from app.models.user import UserRelationship
-from app.mongo import Mongo
 from app.types.datetime import DatetimeStr
 from app.types.object_id import ObjectIdStr
 from app.validators import validate_not_null
@@ -12,21 +11,6 @@ from app.validators import validate_not_null
 
 class PostCreation(BaseModel):
     message: str = Field(..., title="Message", min_length=10, max_length=500, example="What is quantum theory?")
-    owner: EmailStr = Field(..., title="Owner's email",
-                            description="This value must exist in GET /api/v1/users web service.")
-
-    @validator("owner")
-    def validate_existent_email(cls, email: EmailStr) -> str:
-        """Check if the specified email is existent.
-
-        :param email: Email
-        :return: Existent email
-        :raise ValueError: If the specified email is not existent.
-        """
-        if not Mongo.is_existent("user", "email", email):
-            raise ValueError("This value must exist in GET /api/v1/users web service's response.")
-
-        return email
 
 
 class PostUpdate(BaseModel):
@@ -46,7 +30,7 @@ class PostPreResponse(BaseModel):
 
 
 class PostPreRelationships(PostPreResponse):
-    owner: EmailStr = Field(..., title="Owner's email")
+    owner: str = Field(..., title="Owner's identifier")
 
 
 class PostRelationships(BaseModel):

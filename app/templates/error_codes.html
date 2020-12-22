@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="shortcut icon" href="{{ icon }}">
+    <link type="text/css" rel="stylesheet" href="/static/swagger-ui.min.css">
+    <title>{{ title }} - Error Codes</title>
+    <style type="text/css">
+        .swagger-ui table tbody tr {
+            border-bottom: 1px solid rgba(59, 65, 81, .2);
+        }
+
+        span.star {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+<div class="swagger-ui">
+    <div class="wrapper">
+        <div class="info">
+            <hgroup class="main">
+                <h2 class="title">{{ title }}
+                    <span>
+                        <small><pre class="version">{{ version }}</pre></small>
+                    </span>
+                </h2>
+            </hgroup>
+            <table>
+                <thead>
+                <tr>
+                    <td>HTTP Status Code</td>
+                    <td>Error Code</td>
+                    <td>Recommendation</td>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td rowspan="3">401</td>
+                    <td>authorization_header_not_found</td>
+                    <td>Please send an Authorization header in the request.</td>
+                </tr>
+                <tr>
+                    <td>invalid_token</td>
+                    <td>
+                        Please check if the access token scopes are valid.
+                    </td>
+                </tr>
+                <tr>
+                    <td>expired_token</td>
+                    <td>Please refresh the access token.</td>
+                </tr>
+                <tr>
+                    <td>403</td>
+                    <td>unauthorized_access</td>
+                    <td>The client application should notify the end user that there were insufficient privileges to
+                        complete the operation.
+                    </td>
+                </tr>
+                <tr>
+                    <td>404</td>
+                    <td>item_not_found</td>
+                    <td>Please check the item identifier.</td>
+                </tr>
+                <tr>
+                    <td rowspan="5">500</td>
+                    <td>invalid_grant <span class="star">*</span></td>
+                    <td>Please check if the code, code_verifier, scopes, or refresh_token parameter is valid.</td>
+                </tr>
+                <tr>
+                    <td>unauthorized_client <span class="star">*</span></td>
+                    <td>Please check if the client_id parameter is valid.</td>
+                </tr>
+                <tr>
+                    <td>invalid_client <span class="star">*</span></td>
+                    <td>Please check if the client_secret or redirect_uri parameter is valid.</td>
+                </tr>
+                <tr>
+                    <td>temporarily_unavailable <span class="star">*</span></td>
+                    <td>Retry the request after a small delay. The client application might explain to the end user that
+                        its response is delayed because the server is temporarily too busy to handle the request.
+                    </td>
+                </tr>
+                <tr>
+                    <td>internal_server_error</td>
+                    <td>Retry the request after a small delay. After that, if it still does not work, please contact the
+                        system administrator.
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <br>
+            <p>
+                <b>Note: </b><span class="star">*</span> means those error codes will only be presented in
+                the authorization section.
+            </p>
+        </div>
+    </div>
+</div>
+</body>
+</html>

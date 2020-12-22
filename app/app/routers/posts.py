@@ -1,20 +1,22 @@
-import json
 from typing import Optional
 
-from fastapi import APIRouter, Path, Query
+from fastapi import APIRouter, Path, Query, Depends
 from fastapi import status
 from fastapi.requests import Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import Response
+from fastapi.security import HTTPAuthorizationCredentials
 from motor.motor_asyncio import AsyncIOMotorCollection
 
+from app.database_connections import databases
+from app.json_web_token import JsonWebToken
 from app.models.post import PostList, PostData, PostCreation, PostPreRelationships, PostUpdate
-from app.models.user import UserRelationship
 from app.mongo import Mongo
-from app.responses import Response
+from app.responses import main_endpoint_responses, subsidiary_endpoint_responses
+from app.security import bearer_token
 from app.types.object_id import ObjectIdStr
 
-router = APIRouter()
-COLLECTION: AsyncIOMotorCollection = NotImplemented
+router: APIRouter = APIRouter()
+COLLECTION: AsyncIOMotorCollection = None
 
 
 @router.on_event("startup")
@@ -22,50 +24,58 @@ async def start_up() -> None:
     """Execute this function before execute any functions.
     """
     global COLLECTION
-    COLLECTION = Mongo.get_collection("post")
+    COLLECTION = await databases.main_database.set_collection("post")
 
 
-async def add_owner(data: dict) -> None:
-    """Add an owner into the specified post data's relationships.
+async def __add_owner(relationships: dict, owner: str) -> None:
+    """Add an owner into the specified post's relationships data.
 
-    :param data: Post data
+    :param relationships: Post's relationships data
+    :param owner: Owner
     """
-    data.update({
-        "relationships": {
-            "owner": await Mongo.get_relationship("user", "email", data.pop("owner"), UserRelationship)
-        }
+    relationships.update({
+        "owner": {"identifier": owner}
     })
 
 
-async def add_relationships(response: JSONResponse) -> None:
-    """Add relationships into the specified response's data.
+async def __add_relationships(post: dict) -> None:
+    """Add relationships into the specified post data.
 
-    :param response: Response
+    :param post: Post data
     """
-    body: dict = json.loads(response.body)
-    data: dict = body["data"]
-    await add_owner(data)
-    response.body = json.dumps(body).encode()
-    response.headers["Content-Length"] = str(len(response.body))
+    relationships = post["relationships"] = {}
+
+    await __add_owner(relationships, post.pop("owner"))
 
 
 @router.get(
     "",
     summary="Get posts sorting by updated time in descending order.",
-    description="You can search posts by message with regular expression.",
+    description="Posts can be searched by message with regular expression.",
     response_model=PostList,
+    responses=main_endpoint_responses,
 )
 async def get_posts(
         request: Request,
+        authorization: HTTPAuthorizationCredentials = Depends(bearer_token),
         page: int = Query(1, description="Page", ge=1),
         records_per_page: int = Query(10, description="Records per page", ge=1),
-        query: Optional[str] = Query(None, description="Search by message")
+        keyword: Optional[str] = Query(None, description="Keyword for searching posts by message")
 ) -> dict:
-    filters = Mongo.get_regex_filters(query, {"message"})
-    result: dict = await Mongo.list(COLLECTION, PostPreRelationships, request, page, records_per_page, filters)
+    await JsonWebToken.get_user_identifier(access_token=authorization.credentials,
+                                           accepted_scopes={"access_as_user"}
+                                           )
+    result: dict = await Mongo.list(collection=COLLECTION,
+                                    projection_model=PostPreRelationships,
+                                    request=request,
+                                    page=page,
+                                    records_per_page=records_per_page,
+                                    search_fields={"message"},
+                                    keyword=keyword
+                                    )
 
-    for post in result["data"]:
-        await add_owner(post)
+    for post in result.get("data"):
+        await __add_relationships(post)
 
     return result
 
@@ -73,58 +83,86 @@ async def get_posts(
 @router.post(
     "",
     summary="Create a post.",
+    status_code=status.HTTP_201_CREATED,
     response_model=PostData,
-    status_code=status.HTTP_201_CREATED
+    responses=main_endpoint_responses,
 )
-async def create_post(post_information: PostCreation, request: Request) -> JSONResponse:
-    response: JSONResponse = await Mongo.create(COLLECTION, post_information, PostPreRelationships, request)
-    if response.status_code == status.HTTP_201_CREATED:
-        await add_relationships(response)
-    return response
+async def create_post(*,
+                      request: Request,
+                      response: Response,
+                      authorization: HTTPAuthorizationCredentials = Depends(bearer_token),
+                      post_data: PostCreation
+                      ) -> dict:
+    post_information: dict = post_data.dict()
+    post_information["owner"] = await JsonWebToken.get_user_identifier(access_token=authorization.credentials,
+                                                                       accepted_scopes={"access_as_user"}
+                                                                       )
+    result: dict = await Mongo.create(COLLECTION, post_information, PostPreRelationships)
+    response.status_code = status.HTTP_201_CREATED
+    response.headers["Location"] = str(request.url) + "/" + str(result.get("_id"))
+
+    await __add_relationships(result.get("data"))
+
+    return result
 
 
 @router.get(
     "/{post_id}",
     summary="Get a post by post ID.",
     response_model=PostData,
-    responses=Response.get_responses({status.HTTP_404_NOT_FOUND})
+    responses=subsidiary_endpoint_responses,
 )
 async def get_post(
+        authorization: HTTPAuthorizationCredentials = Depends(bearer_token),
         post_id: ObjectIdStr = Path(..., description="Post ID", example="5f43825c66f4c0e20cd17dc3")
-) -> JSONResponse:
-    response = await Mongo.get_by__id(COLLECTION, post_id, PostPreRelationships)
-    if response.status_code == status.HTTP_200_OK:
-        await add_relationships(response)
-    return response
+) -> dict:
+    await JsonWebToken.get_user_identifier(access_token=authorization.credentials,
+                                           accepted_scopes={"access_as_user"}
+                                           )
+    result: dict = await Mongo.get(COLLECTION, post_id, PostPreRelationships)
+
+    await __add_relationships(result.get("data"))
+
+    return result
 
 
 @router.patch(
     "/{post_id}",
     summary="Update a post by post ID.",
     response_model=PostData,
-    responses=Response.get_responses({status.HTTP_404_NOT_FOUND})
+    responses=subsidiary_endpoint_responses,
 )
 async def update_post(
         *,
+        authorization: HTTPAuthorizationCredentials = Depends(bearer_token),
         post_id: ObjectIdStr = Path(..., description="Post ID", example="5f43825c66f4c0e20cd17dc3"),
-        post_information: PostUpdate
-) -> JSONResponse:
-    response = await Mongo.update_by__id(COLLECTION, post_id, post_information, PostPreRelationships)
-    if response.status_code == status.HTTP_200_OK:
-        await add_relationships(response)
-    return response
+        post_data: PostUpdate
+) -> dict:
+    await JsonWebToken.get_user_identifier(access_token=authorization.credentials,
+                                           accepted_scopes={"access_as_user"}
+                                           )
+    result = await Mongo.update(COLLECTION, post_id, post_data.dict(), PostPreRelationships)
+
+    await __add_relationships(result.get("data"))
+
+    return result
 
 
 @router.delete(
     "/{post_id}",
     summary="Delete a post by post ID.",
-    responses=Response.get_responses({status.HTTP_404_NOT_FOUND}),
-    status_code=status.HTTP_204_NO_CONTENT
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses=subsidiary_endpoint_responses,
 )
 async def delete_post(
+        response: Response,
+        authorization: HTTPAuthorizationCredentials = Depends(bearer_token),
         post_id: ObjectIdStr = Path(..., description="Post ID", example="5f43825c66f4c0e20cd17dc3")
-) -> JSONResponse:
-    response = await Mongo.delete_by__id(COLLECTION, post_id)
-    if response.status_code == status.HTTP_200_OK:
-        await add_relationships(response)
-    return response
+) -> None:
+    await JsonWebToken.get_user_identifier(access_token=authorization.credentials,
+                                           accepted_scopes={"access_as_user"}
+                                           )
+
+    response.status_code = status.HTTP_204_NO_CONTENT
+
+    await Mongo.delete(COLLECTION, post_id)

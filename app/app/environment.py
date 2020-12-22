@@ -1,4 +1,3 @@
-import logging
 import os
 
 import aiofiles
@@ -9,13 +8,12 @@ async def get_file_environment(environment_name: str) -> str:
 
     :param environment_name: Environment variable's name
     :return: File environment value
+    :raises ValueError: If the specified environment name's value is not an existing file path.
     """
     try:
         async with aiofiles.open(os.getenv(environment_name)) as file:
             return await file.read()
     except TypeError:
-        logging.error("'{}' environment variable is not found.".format(environment_name))
+        raise ValueError(f"'{environment_name}' environment variable is not found.")
     except OSError:
-        logging.error("'{}' environment variable is not a file.".format(environment_name))
-
-    return ""
+        raise ValueError(f"'{environment_name}' environment variable's value is not an existing file path.")
