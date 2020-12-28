@@ -8,6 +8,8 @@ services:
     restart: on-failure
     environment:
       - API_VERSION=${API_VERSION}
+      - API_PREFIX=${API_PREFIX}
+      - API_BASE_URL=https://${HOST}${API_PREFIX}
       - MONGO_HOST=mongo
       - MONGO_DATABASE_NAME=demo
       - MONGO_DATABASE_USERNAME_FILE=/run/secrets/mongo-application-username
@@ -36,6 +38,7 @@ services:
       - mongo-application-password
   reverse-proxy:
     image: traefik:v2.3.2
+    restart: on-failure
     command:
       - --providers.docker=true
       - --providers.docker.exposedByDefault=false
