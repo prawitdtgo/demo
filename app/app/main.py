@@ -1,17 +1,16 @@
 import os
 
-from fastapi import FastAPI
-
 from app.mongo import Mongo
 from app.routers.apis import api_router
+from fastapi import FastAPI
 
-api_prefix = "/api/v1"
+api_prefix: str = os.getenv("API_PREFIX")
 
-app = FastAPI(
+app: FastAPI = FastAPI(
     title="Demo App",
     description="This is a demonstration application.",
     version=os.getenv("API_VERSION"),
-    docs_url="/",
+    docs_url=api_prefix,
     redoc_url=None,
     openapi_url=api_prefix + "/openapi.json"
 )
