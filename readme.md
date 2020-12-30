@@ -5,26 +5,44 @@ and a MongoDB database migration system. It supports deploying with Docker.
 ---
 
 ## Prerequisites.
+1. Implement a reverse proxy.
+    1. Copy your certificate into ./reverse-proxy/certificates and name it as dtgo.com.crt.
+    1. Copy your certificate's private key into ./reverse-proxy/certificates and name it as dtgo.com.key.
+    1. Set up a reverse proxy.
+        1. Run `docker-compose -f ./reverse-proxy/docker-compose.yml up -d` command if you deploy with docker-compose
+           command.
+        1.
+        Run `docker stack deploy -c ./reverse-proxy/docker-compose.yml -c reverse-proxy/docker-stack.yml <stack name>`
+        command if you deploy with docker stack command.
+
+        For example:
+
+        > docker stack deploy -c ./reverse-proxy/docker-compose.yml -c reverse-proxy/docker-stack.yml reverse-proxy
+
+1. Create a local registry server if you deploy with docker stack command.
+
+   Run `docker stack deploy -c ./docker-registry/docker-stack.yml <stack name>` command.
+
+   For example:
+
+   > docker stack deploy -c ./docker-registry/docker-stack.yml local-registry
+
 1. Set up MongoDB credentials.
 
-    This application will create a root role user and an application user in a fresh installation.
+   This application will create a root role user and an application user in a fresh installation.
 
     * Fill your root username in ./mongodb-credentials/root-username.txt
     * Fill your root password in ./mongodb-credentials/root-password.txt.
     * Fill your application username in ./mongodb-credentials/application-username.txt.
     * Fill your application password in ./mongodb-credentials/application-password.txt.
-    
-    For production environment, you should grant permission of those credential files to users whom can run docker
-    and docker-compose commands only.
 
-1. Set up this application's certificate.
-    1. Copy your certificate into ./certificates and name it as dtgo.com.crt.
-    1. Copy your certificate's private key into ./certificates and name it as dtgo.com.key.
+   For production environment, you should grant permission of those credential files to users whom can run docker and docker-compose commands only.
+
 1. Set up your DNS name following HOST environment's value in /.env.
 
-    You can set your local DNS in development environment.
+   You can set your local DNS in development environment.
 
-    For Windows example, append `127.0.0.1 web-services.dtgo.com` to C:\Windows\System32\drivers\etc\hosts.
+   For Windows example, append `127.0.0.1 web-services.dtgo.com` to C:\Windows\System32\drivers\etc\hosts.
 
 ---
 
@@ -48,16 +66,6 @@ Run `docker-compose down` command.
 
 ## To deploy with docker stack command.
 _You have to run your Docker Engine in swarm mode._
-
-### Prerequisites.
-1. Create a local registry server.
-
-    Run `docker stack deploy --compose-file docker-registry.yml <stack name>` command.
-
-    For example:
-
-    > docker stack deploy --compose-file docker-registry.yml local-registry
-
 ### For development environment:
 #### To install/update this application.
 Run the following command steps by steps.

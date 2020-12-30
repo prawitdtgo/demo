@@ -1,5 +1,4 @@
 version: '3.8'
-
 services:
   app:
     deploy:
@@ -18,20 +17,6 @@ services:
         - traefik.http.middlewares.web-services-redirection.redirectregex.regex=^https://([^/]+)/?$$
         - traefik.http.middlewares.web-services-redirection.redirectregex.replacement=https://$${1}${API_PREFIX}
   mongo:
-    deploy:
-      restart_policy:
-        condition: on-failure
-        max_attempts: 3
-  reverse-proxy:
-    command:
-      - --providers.docker=true
-      - --providers.docker.exposedByDefault=false
-      - --providers.docker.swarmMode=true
-      - --providers.file.directory=/etc/traefix
-      - --entryPoints.web.address=:80
-      - --entrypoints.web.http.redirections.entryPoint.to=websecure
-      - --entrypoints.web.http.redirections.entryPoint.scheme=https
-      - --entrypoints.websecure.address=:443
     deploy:
       restart_policy:
         condition: on-failure
