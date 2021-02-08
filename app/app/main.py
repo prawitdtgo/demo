@@ -28,7 +28,7 @@ app: FastAPI = FastAPI(
                 "<hr><br>"
                 "These are abbreviations in this documentation."
                 "<ol>"
-                "<li><b>SPA</b> stands for 'Single Page Application'.</li>"
+                "<li><b>SPA</b> stands for 'single-page application'.</li>"
                 "</ol>"
                 f"<br>See also the <a href='{api_prefix}/error-codes' target='_blank'>error codes reference</a>.",
     version=os.getenv("API_VERSION"),

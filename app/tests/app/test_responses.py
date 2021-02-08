@@ -3,8 +3,8 @@ from unittest import mock
 
 import pytest
 
-from app.models.exception import ExceptionErrorResponse
-from app.responses import get_responses, get_response_detail
+from app.models.exception import ErrorResponse
+from app.responses import get_responses, get_response_detail, get_error_response_example
 
 
 @mock.patch('app.responses.__response_details', {
@@ -45,7 +45,7 @@ class TestResponses:
         """
         assert get_responses({401, 903}) == {
             401: {
-                "model": ExceptionErrorResponse,
+                "model": ErrorResponse,
                 "content": {
                     "application/json": {
                         "example": {
@@ -58,7 +58,7 @@ class TestResponses:
                 }
             },
             903: {
-                "model": ExceptionErrorResponse,
+                "model": ErrorResponse,
                 "content": {
                     "application/json": {
                         "example": {
@@ -79,3 +79,23 @@ class TestResponses:
 
         with pytest.raises(ValueError, match=f"The specified status code, 400, is undefined."):
             get_responses(status_codes)
+
+    def test_getting_error_response_example(self) -> None:
+        """Test getting an error response example.
+        """
+        error_code: str = "invalid_client"
+        error_description: str = "Invalid client secret is provided."
+
+        assert get_error_response_example(error_code=error_code, error_description=error_description) == {
+            "model": ErrorResponse,
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": {
+                            "error_code": error_code,
+                            "error_description": error_description
+                        }
+                    }
+                }
+            }
+        }

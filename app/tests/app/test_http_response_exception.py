@@ -50,6 +50,18 @@ class TestHTTPResponseException:
         assert result.detail == detail
         assert result.headers is None
 
+    def test_exception_response_with_invalid_custom_detail_value(self) -> None:
+        """Test an exception response with an invalid custom detail value.
+        """
+        status_code: int = 902
+        detail: dict = {
+            "error": "invalid_grant",
+            "error_description": "The code_verifier does not match the code_challenge."
+        }
+
+        with pytest.raises(ValueError, match="The detail's keys must be error_code and error_description."):
+            HTTPResponseException(status_code=status_code, detail=detail)
+
     def test_exception_response_with_headers(self) -> None:
         """Test an exception response with headers.
         """

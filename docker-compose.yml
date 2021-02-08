@@ -16,8 +16,8 @@ services:
       - MONGO_MAIN_DATABASE_USERNAME_FILE=/run/secrets/mongo-application-username
       - MONGO_MAIN_DATABASE_PASSWORD_FILE=/run/secrets/mongo-application-password
       - ALLOWED_ORIGIN=["http://localhost:8080"]
-      - AZURE_AUTHORITY=https://login.microsoftonline.com/c97d379c-b305-45b9-aa6b-a1a85d6840e7
-      - AZURE_AUDIENCE=23254a4e-9d0d-48a9-a3b0-a7434c2d2c0e
+      - AZURE_AUTHORITY=https://login.microsoftonline.com/ee64f829-1cc2-4fb2-996e-2e0fb78f5f29
+      - AZURE_AUDIENCE=d665ee86-da44-4d36-8d30-0ad2b5e16bde
     secrets:
       - mongo-application-username
       - mongo-application-password

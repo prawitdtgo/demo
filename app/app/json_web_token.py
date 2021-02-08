@@ -140,17 +140,6 @@ class JsonWebToken:
             raise HTTPResponseException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @classmethod
-    async def __validate_access_token_scopes(cls, decoded_access_token: dict, accepted_scopes: Set[str]) -> None:
-        """Validate access token scopes.
-
-        :param decoded_access_token: Decoded access token
-        :param accepted_scopes: Accepted scopes
-        :raises HTTPResponseException: If access token scopes were not in accepted scopes.
-        """
-        if set(decoded_access_token.get("scp").split()).isdisjoint(accepted_scopes):
-            raise HTTPResponseException(status_code=status.HTTP_403_FORBIDDEN)
-
-    @classmethod
     async def get_user_identifier(cls, access_token: str, accepted_scopes: Set[str]) -> str:
         """Get the user identifier from the specified access token.
 
@@ -163,7 +152,10 @@ class JsonWebToken:
                                                                      audience=os.getenv("AZURE_AUDIENCE"),
                                                                      )
 
-        await cls.__validate_access_token_scopes(decoded_access_token, accepted_scopes)
+        scopes: str = decoded_access_token.get("scp")
+
+        if scopes is None or set(scopes.split()).isdisjoint(accepted_scopes):
+            raise HTTPResponseException(status_code=status.HTTP_403_FORBIDDEN)
 
         return decoded_access_token.get("oid")
 

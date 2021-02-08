@@ -18,12 +18,15 @@ class HTTPResponseException(HTTPException):
         """Initiate an exception response class object.
 
         :param status_code: Status code
-        :param detail: Detail
+        :param detail: Detail (The keys must be error_code and error_description.)
         :param headers: Headers
         :raises ValueError: If the specified status code is undefined.
         """
         if detail is None:
             detail = get_response_detail(status_code)
+
+        if list(detail.keys()) != ["error_code", "error_description"]:
+            raise ValueError("The detail's keys must be error_code and error_description.")
 
         if status_code == status.HTTP_401_UNAUTHORIZED:
 

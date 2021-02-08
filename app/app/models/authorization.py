@@ -13,6 +13,11 @@ class ScopeEnum(str, Enum):
     READ_USER_DATA = get_microsoft_graph_scope("User.Read")
 
 
+class DefaultScopeEnum(str, Enum):
+    LOCAL = get_local_scope(".default")
+    MICROSOFT_GRAPH = get_microsoft_graph_scope(".default")
+
+
 class AuthorizationCodeData(BaseModel):
     authorization_url: str = Field(...,
                                    title="Authorization URL",
@@ -34,7 +39,7 @@ class AuthorizationCodeData(BaseModel):
     state: str = Field(...,
                        title="State",
                        description="The state value that will be sent to the authorization server by "
-                                   "the authorization URL. The application should verify this state value and "
+                                   "the authorization URL. The client application should verify this state value and "
                                    "the response's state value are identical to prevent cross-site request forgery, "
                                    "CSRF, attacks.",
                        example="cmpgoPIfSADJQOzj"
@@ -45,9 +50,21 @@ class AuthorizationCodeResponse(BaseModel):
     data: AuthorizationCodeData
 
 
-class ClientGrantForm(BaseModel):
+class ClientCredentialsForm(BaseModel):
     client_id: str = Field(..., title="Client ID")
     client_secret: SecretStr = Field(..., title="Client secret")
+
+
+class ClientCredentialsGrantForm(ClientCredentialsForm):
+    scopes: List[DefaultScopeEnum] = Field(...,
+                                           title="A list of scopes",
+                                           description="The scopes must all be from a single resource.",
+                                           example=[
+                                               DefaultScopeEnum.LOCAL]
+                                           )
+
+
+class BaseGrantForm(ClientCredentialsForm):
     scopes: List[ScopeEnum] = Field(...,
                                     title="A list of scopes",
                                     description="The scopes must all be from a single resource.",
@@ -55,7 +72,7 @@ class ClientGrantForm(BaseModel):
                                     )
 
 
-class AuthorizationCodeGrantForm(ClientGrantForm):
+class AuthorizationCodeGrantForm(BaseGrantForm):
     redirect_uri: AnyHttpUrl = Field(...,
                                      title="Redirect URI",
                                      description="The same redirect URI value that was used to acquire "
@@ -73,7 +90,7 @@ class AuthorizationCodeGrantForm(ClientGrantForm):
                                )
 
 
-class RefreshTokenGrantForm(ClientGrantForm):
+class RefreshTokenGrantForm(BaseGrantForm):
     refresh_token: str = Field(...,
                                title="Refresh token",
                                description="The refresh token that was received from "
@@ -81,7 +98,7 @@ class RefreshTokenGrantForm(ClientGrantForm):
                                )
 
 
-class TokenData(BaseModel):
+class AccessTokenData(BaseModel):
     token_type: str = Field(..., title="Token type", example="Bearer")
     access_token: str = Field(..., title="Access token", description="Use this token to access these web services.")
     access_token_expiration: int = Field(...,
@@ -89,6 +106,13 @@ class TokenData(BaseModel):
                                          description="How long the access token is valid (in seconds).",
                                          example=3599
                                          )
+
+
+class AccessTokenResponse(BaseModel):
+    data: AccessTokenData
+
+
+class TokensData(AccessTokenData):
     scope: str = Field(...,
                        title="Scopes",
                        description="A space-separated list of scopes that the access token is valid for.",
@@ -102,16 +126,16 @@ class TokenData(BaseModel):
                                )
 
 
-class TokenResponse(BaseModel):
-    data: TokenData
+class TokensResponse(BaseModel):
+    data: TokensData
 
 
 class SignOutData(BaseModel):
     sign_out_url: AnyHttpUrl = Field(...,
                                      title="Sign-out URL",
-                                     description="The URL for signing the end user out of the system.",
+                                     description="The URL for signing the signed-in user out of the system.",
                                      example="https://login.microsoftonline.com/common/oauth2/v2.0/logout"
-                                             "?post_logout_redirect_uri=http://localhost:8080/index.html"
+                                             "?post_logout_redirect_uri=http://localhost:8080"
                                      )
 
 

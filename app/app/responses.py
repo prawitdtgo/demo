@@ -2,7 +2,7 @@ from typing import Set
 
 from fastapi import status
 
-from app.models.exception import ExceptionErrorResponse
+from app.models.exception import ErrorResponse
 
 __response_details: dict = {
     status.HTTP_401_UNAUTHORIZED: {
@@ -48,12 +48,34 @@ def get_responses(status_codes: Set[int]) -> dict:
     responses: dict = {}
 
     for status_code in status_codes:
-        responses[status_code] = {
-            "model": ExceptionErrorResponse,
-            "content": {"application/json": {"example": {"detail": get_response_detail(status_code)}}}
-        }
+        error: dict = get_response_detail(status_code)
+        responses[status_code] = get_error_response_example(error_code=error.get("error_code"),
+                                                            error_description=error.get("error_description")
+                                                            )
 
     return responses
+
+
+def get_error_response_example(error_code: str, error_description: str) -> dict:
+    """Get an error response example.
+
+    :param error_code: Error code
+    :param error_description: Error description
+    :return: Error response example
+    """
+    return {
+        "model": ErrorResponse,
+        "content": {
+            "application/json": {
+                "example": {
+                    "detail": {
+                        "error_code": error_code,
+                        "error_description": error_description
+                    }
+                }
+            }
+        }
+    }
 
 
 __main_response_codes: set = {status.HTTP_500_INTERNAL_SERVER_ERROR,

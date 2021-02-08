@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 
 
-class ExceptionError(BaseModel):
+class Error(BaseModel):
     error_code: str = Field(...,
                             title="Error code",
                             description="An error code string that can be used to classify types of errors that occur, "
@@ -14,5 +14,5 @@ class ExceptionError(BaseModel):
                                    )
 
 
-class ExceptionErrorResponse(BaseModel):
-    detail: ExceptionError
+class ErrorResponse(BaseModel):
+    detail: Error

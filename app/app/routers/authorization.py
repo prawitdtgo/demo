@@ -1,21 +1,22 @@
 import os
 import re
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Query
 from fastapi import status
-from msal import ClientApplication, ConfidentialClientApplication
+from msal import ConfidentialClientApplication, PublicClientApplication
 from pydantic.networks import AnyHttpUrl
 
 from app.http_response_exception import HTTPResponseException
-from app.models.authorization import AuthorizationCodeResponse, TokenResponse, \
-    ClientGrantForm, RefreshTokenGrantForm, ScopeEnum, AuthorizationCodeGrantForm, SignOutResponse
-from app.models.exception import ExceptionErrorResponse
+from app.models.authorization import AuthorizationCodeResponse, TokensResponse, \
+    ClientCredentialsForm, RefreshTokenGrantForm, ScopeEnum, AuthorizationCodeGrantForm, SignOutResponse, \
+    AccessTokenResponse, ClientCredentialsGrantForm
+from app.responses import get_error_response_example
 
 router: APIRouter = APIRouter()
 
 
-async def __get_confidential_client_application(form: ClientGrantForm) -> ConfidentialClientApplication:
+async def __get_confidential_client_application(form: ClientCredentialsForm) -> ConfidentialClientApplication:
     """Get a confidential client application.
 
     :param form: Client form
@@ -87,7 +88,7 @@ async def get_authorization_url(
             <tr>
                 <td>code</td>
                 <td>
-                    The authorization code that the application requested. The application can use
+                    The authorization code that the client application requested. The client application can use
                     the authorization code to request an access token for the target resource.
                     Authorization codes are short-lived, typically they expire after about 10 minutes.
                 </td>
@@ -95,8 +96,8 @@ async def get_authorization_url(
             <tr>
                 <td>state</td>
                 <td>
-                    The application should verify the state value in the request and response are identical to prevent
-                    cross-site request forgery, CSRF, attacks.
+                    The client application should verify the state value in the request and response are identical
+                    to prevent cross-site request forgery, CSRF, attacks.
                 </td>
             </tr>
         </tbody>
@@ -119,17 +120,21 @@ async def get_authorization_url(
                     <p>These are possible error code strings and their root cause.</p>
                     <ul>
                         <li>
-                            invalid_client - This error code will be presented if the protected web services application
+                            <b>invalid_client</b> - This error code will be presented if this web services application
                             does not expose some scopes, please contact the system administrator.
                         </li>
                         <li>
-                            consent_required - This error code will be presented if the end user does not accept
-                            the application consent request.<br>
-                            (The end user presses the Cancel button on the application consent request page.)
+                            <b>interaction_required</b> - This error code will be presented if the end user is not
+                            allowed to access this web services application.
                         </li>
                         <li>
-                            access_denied - This error code will be presented if the end user denies the application
-                            consent request.
+                            <b>consent_required</b> - This error code will be presented if the end user does not accept
+                            the client application consent request.<br>
+                            (The end user presses the Cancel button on the client application consent request page.)
+                        </li>
+                        <li>
+                            <b>access_denied</b> - This error code will be presented if the end user denies
+                            the client application consent request.
                         </li>
                     </ul>
                 </td>
@@ -147,7 +152,9 @@ async def get_authorization_url(
         </tbody>
     </table>
     """
-    azure_client: ClientApplication = ClientApplication(client_id=client_id, authority=os.getenv("AZURE_AUTHORITY"))
+    azure_client: PublicClientApplication = PublicClientApplication(client_id=client_id,
+                                                                    authority=os.getenv("AZURE_AUTHORITY")
+                                                                    )
     authorization_code_flow: dict = azure_client.initiate_auth_code_flow(scopes=scopes, redirect_uri=redirect_uri)
 
     return {
@@ -162,22 +169,16 @@ async def get_authorization_url(
 @router.post(
     "/authorization-code-grant",
     summary="Redeem an authorization code for an access token.",
-    response_model=TokenResponse,
+    description="For an SPA, please follow [this guidance]("
+                "https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow#request-an"
+                "-access-token).",
+    response_model=TokensResponse,
     responses={
-        status.HTTP_500_INTERNAL_SERVER_ERROR: {
-            "model": ExceptionErrorResponse,
-            "content": {
-                "application/json": {
-                    "example": {
-                        "detail": {
-                            "error_code": "invalid_grant",
-                            "error_description": "The code_verifier does not match the code_challenge supplied in "
-                                                 "the authorization request for PKCE."
-                        }
-                    }
-                }
-            }
-        }
+        status.HTTP_500_INTERNAL_SERVER_ERROR: get_error_response_example(
+            error_code="invalid_grant",
+            error_description="The code_verifier does not match the code_challenge supplied in "
+                              "the authorization request for PKCE."
+        )
     },
 )
 async def acquire_tokens_by_authorization_code(form: AuthorizationCodeGrantForm) -> dict:
@@ -197,21 +198,15 @@ async def acquire_tokens_by_authorization_code(form: AuthorizationCodeGrantForm)
 @router.post(
     "/refresh-token-grant",
     summary="Redeem a refresh token for an access token.",
-    response_model=TokenResponse,
+    description="For an SPA, please follow [this guidance]("
+                "https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow#refresh-the"
+                "-access-token).",
+    response_model=TokensResponse,
     responses={
-        status.HTTP_500_INTERNAL_SERVER_ERROR: {
-            "model": ExceptionErrorResponse,
-            "content": {
-                "application/json": {
-                    "example": {
-                        "detail": {
-                            "error_code": "invalid_client",
-                            "error_description": "Invalid client secret is provided."
-                        }
-                    }
-                }
-            }
-        }
+        status.HTTP_500_INTERNAL_SERVER_ERROR: get_error_response_example(
+            error_code="invalid_client",
+            error_description="Invalid client secret is provided."
+        )
     },
 )
 async def acquire_tokens_by_refresh_token(form: RefreshTokenGrantForm) -> dict:
@@ -225,14 +220,41 @@ async def acquire_tokens_by_refresh_token(form: RefreshTokenGrantForm) -> dict:
 
 
 @router.get(
-    "/sign-out",
-    summary="Send a sign-out request.",
-    description="Please open the returned sign-out URL in a browser to sign the end user out of the system.",
+    "/sign-out-url",
+    summary="Get a sign-out URL for sending a sign-out request.",
+    description="Please open the returned sign-out URL in a browser to sign the signed-in user out of the system.",
     response_model=SignOutResponse
 )
-async def sign_out(redirect_uri: AnyHttpUrl = Query(..., description="Redirect URI")) -> dict:
+async def sign_out(
+        redirect_uri: Optional[AnyHttpUrl] = Query(None, description="Redirect URI", example="http://localhost:8080")
+) -> dict:
+    sign_out_url: str = f"{os.getenv('AZURE_AUTHORITY')}/oauth2/v2.0/logout"
+
+    if redirect_uri is not None:
+        sign_out_url += f"?post_logout_redirect_uri={redirect_uri}"
+
     return {
         "data": {
-            "sign_out_url": f"{os.getenv('AZURE_AUTHORITY')}/oauth2/v2.0/logout?post_logout_redirect_uri={redirect_uri}"
+            "sign_out_url": sign_out_url
         }
     }
+
+
+@router.post(
+    "/client-credentials-grant",
+    summary="Acquire an access token by client credentials grant.",
+    description="The client application consent must be approved by a global administrator first."
+                "<p>**Note:** This grant type does not support an SPA.</p>",
+    response_model=AccessTokenResponse,
+    responses={
+        status.HTTP_500_INTERNAL_SERVER_ERROR: get_error_response_example(
+            error_code="invalid_client",
+            error_description="Invalid client secret is provided."
+        )
+    },
+)
+async def acquire_tokens_by_client_credentials(form: ClientCredentialsGrantForm) -> dict:
+    azure_client: ConfidentialClientApplication = await __get_confidential_client_application(form)
+    access_token_response: dict = azure_client.acquire_token_for_client(scopes=form.scopes)
+
+    return await __get_tokens_data(access_token_response)

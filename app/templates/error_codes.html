@@ -63,7 +63,11 @@
                     <td>Please check the item identifier.</td>
                 </tr>
                 <tr>
-                    <td rowspan="5">500</td>
+                    <td rowspan="6">500</td>
+                    <td>invalid_request <span class="star">*</span></td>
+                    <td>This error code will be presented if the client application is an SPA.</td>
+                </tr>
+                <tr>
                     <td>invalid_grant <span class="star">*</span></td>
                     <td>Please check if the code, code_verifier, scopes, or refresh_token parameter is valid.</td>
                 </tr>
@@ -92,8 +96,13 @@
             <br>
             <p>
                 <b>Note: </b><span class="star">*</span> means those error codes will only be presented in
-                the authorization section.
+                the following web services below.
             </p>
+            <ul>
+                <li>POST https://web-services.dtgo.com/api/v1/oauth2/authorization-code-grant</li>
+                <li>POST https://web-services.dtgo.com/api/v1/oauth2/refresh-token-grant</li>
+                <li>POST https://web-services.dtgo.com/api/v1/oauth2/client-credentials-grant</li>
+            </ul>
         </div>
     </div>
 </div>
