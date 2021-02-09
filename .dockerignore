@@ -2,7 +2,7 @@
 .gitattributes
 .gitignore
 /.idea
-**/__pycache__
+**/.pytest_cache
 /mongodb-credentials
 /reverse-proxy
 /docker-registry

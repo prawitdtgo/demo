@@ -1,3 +1,2 @@
 FROM mongo:4.4.0-bionic
-
 COPY ./mongodb-setup-scripts /docker-entrypoint-initdb.d
