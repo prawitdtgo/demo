@@ -1,7 +1,16 @@
-FROM tiangolo/uvicorn-gunicorn:python3.8-slim
+FROM node:15.8.0-alpine as build-stage
+WORKDIR /stage
+COPY ./package*.json ./
+COPY ./webpack.mix.js .
+COPY ./app/assets ./app/assets
+RUN npm install
+RUN npx mix --production
+
+FROM tiangolo/uvicorn-gunicorn:python3.8-slim as production-stage
 ENV TZ Asia/Bangkok
 WORKDIR /
-COPY requirements.txt .
+COPY ./requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt
 WORKDIR app
 COPY ./app .
+COPY --from=build-stage /stage/app/assets/public assets/public

@@ -3,17 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <link rel="shortcut icon" href="{{ icon }}">
-    <link type="text/css" rel="stylesheet" href="/static/swagger-ui.min.css">
+    <link type="text/css" rel="stylesheet" href="/assets/public/css/swagger-ui.css">
+    <link type="text/css" rel="stylesheet" href="/assets/public/css/error_code.css">
     <title>{{ title }} - Error Codes</title>
-    <style type="text/css">
-        .swagger-ui table tbody tr {
-            border-bottom: 1px solid rgba(59, 65, 81, .2);
-        }
-
-        span.star {
-            color: red;
-        }
-    </style>
 </head>
 <body>
 <div class="swagger-ui">
@@ -29,9 +21,9 @@
             <table>
                 <thead>
                 <tr>
-                    <td>HTTP Status Code</td>
-                    <td>Error Code</td>
-                    <td>Recommendation</td>
+                    <th class="width-10">HTTP Status Code</th>
+                    <th class="width-20">Error Code</th>
+                    <th class="width-70">Recommendation</th>
                 </tr>
                 </thead>
                 <tbody>

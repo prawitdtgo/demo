@@ -1,0 +1,13 @@
+@for $number from 1 through 100 {
+  th.width-#{$number} {
+    width: $number + unquote('%');
+  }
+}
+
+.swagger-ui table tbody tr {
+  border-bottom: 1px solid rgba(59, 65, 81, .2);
+}
+
+span.star {
+  color: red;
+}

@@ -37,7 +37,7 @@ app: FastAPI = FastAPI(
     openapi_url=api_prefix + "/openapi.json",
 )
 
-app.mount("/static", StaticFiles(directory="/app/static"), name="static")
+app.mount("/assets", StaticFiles(directory="/app/assets"), name="assets")
 
 app.add_middleware(
     CORSMiddleware,
@@ -69,7 +69,7 @@ async def get_custom_swagger_ui_html() -> HTMLResponse:
     return get_swagger_ui_html(
         openapi_url=app.openapi_url,
         title=app.title + " - Swagger UI",
-        swagger_css_url="/static/swagger-ui.min.css",
+        swagger_css_url="/assets/public/css/swagger-ui.css",
         swagger_favicon_url=swagger_favicon_url
     )
 
