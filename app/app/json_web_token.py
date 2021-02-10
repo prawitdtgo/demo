@@ -1,7 +1,7 @@
 import base64
 import logging
 import os
-from typing import Set, List
+from typing import List, Union
 
 import jwt
 from cryptography.hazmat.backends import default_backend
@@ -23,7 +23,7 @@ class JsonWebToken:
     """JSON Web Token class
 
     """
-    __issuer: str = None
+    __issuer: str
     __public_keys: List[dict] = {}
     __expired_token: dict = {
         "error_code": "expired_token",
@@ -100,16 +100,12 @@ class JsonWebToken:
         cls.__public_keys = (await cls.__get_azure_configuration(configuration.get("jwks_uri"))).get("keys")
 
     @classmethod
-    async def __decode_access_token(cls, access_token: str, audience: str, is_issuer_verified: bool = True,
-                                    is_signature_verified: bool = True) -> dict:
+    async def __decode_access_token(cls, access_token: str) -> dict:
         """Decode an access token.
 
         :param access_token: Access token
-        :param audience: Audience
-        :param is_issuer_verified: Is the issuer verified?
-        :param is_signature_verified: Is the signature verified?
         :return: Access token claims
-        :raises HTTPResponseException: If the specified access token is invalid.
+        :raises HTTPResponseException: If the specified access token was invalid.
         """
         try:
             header: dict = jwt.get_unverified_header(access_token)
@@ -117,7 +113,7 @@ class JsonWebToken:
             return jwt.decode(jwt=access_token,
                               key=await cls.__get_public_key(header.get("kid")),
                               algorithms=[header.get("alg")],
-                              audience=audience,
+                              audience=os.getenv("AZURE_AUDIENCE"),
                               issuer=cls.__issuer,
                               options={
                                   "require_exp": True,
@@ -127,8 +123,8 @@ class JsonWebToken:
                                   "verify_iat": True,
                                   "verify_nbf": True,
                                   "verify_aud": True,
-                                  "verify_iss": is_issuer_verified,
-                                  "verify_signature": is_signature_verified,
+                                  "verify_iss": True,
+                                  "verify_signature": True,
                               })
         except ExpiredSignatureError:
             raise HTTPResponseException(status_code=status.HTTP_401_UNAUTHORIZED, detail=cls.__expired_token)
@@ -140,34 +136,57 @@ class JsonWebToken:
             raise HTTPResponseException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @classmethod
-    async def get_user_identifier(cls, access_token: str, accepted_scopes: Set[str]) -> str:
+    async def __get_scopes(cls, decoded_access_token: dict) -> List[str]:
+        """Get a list of scopes.
+
+        :param decoded_access_token: Decoded access token
+        :return: A list of scopes
+        """
+        scopes: Union[str, None] = decoded_access_token.get("scp")
+
+        return [] if scopes is None else scopes.split()
+
+    @classmethod
+    async def __get_roles(cls, decoded_access_token: dict) -> List[str]:
+        """Get a list of roles.
+
+        :param decoded_access_token: Decoded access token
+        :return: A list of roles
+        """
+        roles: Union[List[str], None] = decoded_access_token.get("roles")
+
+        return [] if roles is None else roles
+
+    @classmethod
+    async def get_user_identifier(cls, access_token: str, accepted_role: str = None) -> str:
         """Get the user identifier from the specified access token.
 
         :param access_token: Access token
-        :param accepted_scopes: Accepted scopes
+        :param accepted_role: Accepted user role
         :return: User identifier
-        :raises HTTPResponseException: If the specified access token is invalid.
+        :raises HTTPResponseException: If the specified access token was invalid.
         """
-        decoded_access_token: dict = await cls.__decode_access_token(access_token=access_token,
-                                                                     audience=os.getenv("AZURE_AUDIENCE"),
-                                                                     )
+        decoded_access_token: dict = await cls.__decode_access_token(access_token=access_token)
 
-        scopes: str = decoded_access_token.get("scp")
+        if "access_as_user" not in await cls.__get_scopes(decoded_access_token):
+            raise HTTPResponseException(status_code=status.HTTP_403_FORBIDDEN)
 
-        if scopes is None or set(scopes.split()).isdisjoint(accepted_scopes):
+        if accepted_role is not None and accepted_role not in await cls.__get_roles(decoded_access_token):
             raise HTTPResponseException(status_code=status.HTTP_403_FORBIDDEN)
 
         return decoded_access_token.get("oid")
 
     @classmethod
-    async def validate_microsoft_graph_access_token(cls, access_token: str) -> None:
-        """Validate a Microsoft Graph access token.
+    async def validate_application_access_token(cls, access_token: str) -> None:
+        """Validate an application access token.
 
-        :param access_token: Microsoft Graph access token
-        :raises HTTPResponseException: If the specified Microsoft Graph access token is invalid.
+        :param access_token: Access token
+        :raises HTTPResponseException: If the specified access token was invalid.
         """
-        await cls.__decode_access_token(access_token=access_token,
-                                        audience="https://graph.microsoft.com",
-                                        is_issuer_verified=False,
-                                        is_signature_verified=False
-                                        )
+        decoded_access_token: dict = await cls.__decode_access_token(access_token=access_token)
+
+        if decoded_access_token.get("scp") is not None:
+            return
+
+        if "access_as_application" not in await cls.__get_roles(decoded_access_token):
+            raise HTTPResponseException(status_code=status.HTTP_403_FORBIDDEN)

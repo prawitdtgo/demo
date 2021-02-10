@@ -15,7 +15,7 @@ class HTTPResponseException(HTTPException):
             detail: Optional[Dict[str, str]] = None,
             headers: Optional[Dict[str, Any]] = None,
     ) -> None:
-        """Initiate an exception response class object.
+        """Initialize an exception response class object.
 
         :param status_code: Status code
         :param detail: Detail (The keys must be error_code and error_description.)

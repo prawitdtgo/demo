@@ -8,7 +8,7 @@ from app.http_response_exception import HTTPResponseException
 @mock.patch('app.responses.__response_details', {
     401: {
         "error_code": "invalid_token",
-        "error_description": "The access token is invalid."
+        "error_description": "The access token was invalid."
     },
     902: {
         "error_code": "item_not_found",
@@ -88,7 +88,7 @@ class TestHTTPResponseException:
         assert result.status_code == status_code
         assert result.detail == {
             "error_code": "invalid_token",
-            "error_description": "The access token is invalid."
+            "error_description": "The access token was invalid."
         }
         assert result.headers == {"WWW-Authenticate": "Bearer"}
 
@@ -105,7 +105,7 @@ class TestHTTPResponseException:
         assert result.status_code == status_code
         assert result.detail == {
             "error_code": "invalid_token",
-            "error_description": "The access token is invalid."
+            "error_description": "The access token was invalid."
         }
         assert result.headers == {
             "custom-code": "item_not_found",

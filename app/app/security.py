@@ -15,7 +15,7 @@ class BearerToken(HTTPBearer):
 
         :param request: HTTP request
         :return: Bearer token
-        :raises HTTPException: If the request's Authorization header is invalid.
+        :raises HTTPException: If the request's Authorization header was invalid.
         """
         try:
             return await super().__call__(request)

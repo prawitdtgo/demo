@@ -41,6 +41,8 @@ database migration system. It supports deploying with Docker.
     For production environment, you should grant permission of those credential files to users whom can run docker and
    docker-compose commands only.
 
+1. Fill the Azure audience secret in ./azure_audience_secret.txt.
+
 1. Set up your DNS name following HOST environment's value in /.env.
 
     You can set your local DNS in development environment.

@@ -10,7 +10,7 @@ from app.responses import get_responses, get_response_detail, get_error_response
 @mock.patch('app.responses.__response_details', {
     401: {
         "error_code": "invalid_token",
-        "error_description": "The access token is invalid."
+        "error_description": "The access token was invalid."
     },
     902: {
         "error_code": "item_not_found",
@@ -51,7 +51,7 @@ class TestResponses:
                         "example": {
                             "detail": {
                                 "error_code": "invalid_token",
-                                "error_description": "The access token is invalid."
+                                "error_description": "The access token was invalid."
                             }
                         }
                     }

@@ -38,7 +38,7 @@ class TestEnvironment:
         """
         environment_name: str = "test"
 
-        with pytest.raises(ValueError, match=f"'{environment_name}' environment variable is not found."):
+        with pytest.raises(ValueError, match=f"'{environment_name}' environment variable name was not found."):
             await get_file_environment(environment_name)
 
     async def test_getting_file_environment_with_non_existing_file(self, mocker: MockerFixture) -> None:
@@ -51,6 +51,6 @@ class TestEnvironment:
         mocker.patch.dict(os.environ, {environment_name: tempfile.gettempdir()})
 
         with pytest.raises(ValueError,
-                           match=f"'{environment_name}' environment variable's value is not an existing file path."
+                           match=f"'{environment_name}' environment variable value was not an existing file path."
                            ):
             await get_file_environment(environment_name)

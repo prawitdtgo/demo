@@ -8,3 +8,4 @@
 /docker-registry
 /node_modules
 /app/assets/public
+azure_audience_secret.txt

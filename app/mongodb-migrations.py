@@ -13,7 +13,7 @@ from app.environment import get_file_environment
 class MongoDBMigration:
     """This class handles all MongoDB migrations.
     """
-    __arguments: Namespace = None
+    __arguments: Namespace
 
     def __init__(self) -> None:
         """Initialize this class.

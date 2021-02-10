@@ -8,6 +8,8 @@ from fastapi.security import HTTPAuthorizationCredentials
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 from app.database_connections import databases
+from app.documentation import GrantType
+from app.http_response_exception import HTTPResponseException
 from app.json_web_token import JsonWebToken
 from app.models.post import PostList, PostData, PostCreation, PostPreRelationships, PostUpdate
 from app.mongo import Mongo
@@ -16,7 +18,7 @@ from app.security import bearer_token
 from app.types.object_id import ObjectIdStr
 
 router: APIRouter = APIRouter()
-COLLECTION: AsyncIOMotorCollection = None
+COLLECTION: AsyncIOMotorCollection
 
 
 @router.on_event("startup")
@@ -48,10 +50,24 @@ async def __add_relationships(post: dict) -> None:
     await __add_owner(relationships, post.pop("owner"))
 
 
+async def __prove_owner(authorization: HTTPAuthorizationCredentials, post_id: str) -> None:
+    """Prove the owner of the post that is specified by post ID.
+
+    :param authorization: Authorization header
+    :param post_id: Post ID
+    :raises HTTPResponseException: If the signed-in user was not the post's owner.
+    """
+    owner: str = await JsonWebToken.get_user_identifier(access_token=authorization.credentials)
+    post: dict = await Mongo.get(COLLECTION, post_id, PostPreRelationships)
+
+    if post.get("data").get("owner") != owner:
+        raise HTTPResponseException(status_code=status.HTTP_403_FORBIDDEN)
+
+
 @router.get(
     "",
     summary="Get posts sorting by updated time in descending order.",
-    description="Posts can be searched by message with regular expression.",
+    description="Posts can be searched by message with regular expression." + GrantType.CLIENT_CREDENTIALS,
     response_model=PostList,
     responses=main_endpoint_responses,
 )
@@ -62,9 +78,8 @@ async def get_posts(
         records_per_page: int = Query(10, description="Records per page", ge=1),
         keyword: Optional[str] = Query(None, description="Keyword for searching posts by message")
 ) -> dict:
-    await JsonWebToken.get_user_identifier(access_token=authorization.credentials,
-                                           accepted_scopes={"access_as_user"}
-                                           )
+    await JsonWebToken.validate_application_access_token(access_token=authorization.credentials)
+
     result: dict = await Mongo.list(collection=COLLECTION,
                                     projection_model=PostPreRelationships,
                                     request=request,
@@ -84,6 +99,7 @@ async def get_posts(
     "",
     summary="Create a post.",
     status_code=status.HTTP_201_CREATED,
+    description=GrantType.AUTHORIZATION_CODE,
     response_model=PostData,
     responses=main_endpoint_responses,
 )
@@ -94,9 +110,7 @@ async def create_post(*,
                       post_data: PostCreation
                       ) -> dict:
     post_information: dict = post_data.dict()
-    post_information["owner"] = await JsonWebToken.get_user_identifier(access_token=authorization.credentials,
-                                                                       accepted_scopes={"access_as_user"}
-                                                                       )
+    post_information["owner"] = await JsonWebToken.get_user_identifier(access_token=authorization.credentials)
     result: dict = await Mongo.create(COLLECTION, post_information, PostPreRelationships)
     response.status_code = status.HTTP_201_CREATED
     response.headers["Location"] = str(request.url) + "/" + str(result.get("_id"))
@@ -109,6 +123,7 @@ async def create_post(*,
 @router.get(
     "/{post_id}",
     summary="Get a post by post ID.",
+    description=GrantType.CLIENT_CREDENTIALS,
     response_model=PostData,
     responses=subsidiary_endpoint_responses,
 )
@@ -116,9 +131,8 @@ async def get_post(
         authorization: HTTPAuthorizationCredentials = Depends(bearer_token),
         post_id: ObjectIdStr = Path(..., description="Post ID", example="5f43825c66f4c0e20cd17dc3")
 ) -> dict:
-    await JsonWebToken.get_user_identifier(access_token=authorization.credentials,
-                                           accepted_scopes={"access_as_user"}
-                                           )
+    await JsonWebToken.validate_application_access_token(access_token=authorization.credentials)
+
     result: dict = await Mongo.get(COLLECTION, post_id, PostPreRelationships)
 
     await __add_relationships(result.get("data"))
@@ -129,6 +143,7 @@ async def get_post(
 @router.patch(
     "/{post_id}",
     summary="Update a post by post ID.",
+    description=GrantType.AUTHORIZATION_CODE,
     response_model=PostData,
     responses=subsidiary_endpoint_responses,
 )
@@ -138,9 +153,8 @@ async def update_post(
         post_id: ObjectIdStr = Path(..., description="Post ID", example="5f43825c66f4c0e20cd17dc3"),
         post_data: PostUpdate
 ) -> dict:
-    await JsonWebToken.get_user_identifier(access_token=authorization.credentials,
-                                           accepted_scopes={"access_as_user"}
-                                           )
+    await __prove_owner(authorization, post_id)
+
     result = await Mongo.update(COLLECTION, post_id, post_data.dict(), PostPreRelationships)
 
     await __add_relationships(result.get("data"))
@@ -151,6 +165,7 @@ async def update_post(
 @router.delete(
     "/{post_id}",
     summary="Delete a post by post ID.",
+    description=GrantType.AUTHORIZATION_CODE,
     status_code=status.HTTP_204_NO_CONTENT,
     responses=subsidiary_endpoint_responses,
 )
@@ -159,9 +174,7 @@ async def delete_post(
         authorization: HTTPAuthorizationCredentials = Depends(bearer_token),
         post_id: ObjectIdStr = Path(..., description="Post ID", example="5f43825c66f4c0e20cd17dc3")
 ) -> None:
-    await JsonWebToken.get_user_identifier(access_token=authorization.credentials,
-                                           accepted_scopes={"access_as_user"}
-                                           )
+    await __prove_owner(authorization, post_id)
 
     response.status_code = status.HTTP_204_NO_CONTENT
 

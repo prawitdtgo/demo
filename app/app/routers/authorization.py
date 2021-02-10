@@ -1,5 +1,4 @@
 import os
-import re
 from typing import List, Optional
 
 from fastapi import APIRouter, Query
@@ -7,13 +6,19 @@ from fastapi import status
 from msal import ConfidentialClientApplication, PublicClientApplication
 from pydantic.networks import AnyHttpUrl
 
-from app.http_response_exception import HTTPResponseException
-from app.models.authorization import AuthorizationCodeResponse, TokensResponse, \
-    ClientCredentialsForm, RefreshTokenGrantForm, ScopeEnum, AuthorizationCodeGrantForm, SignOutResponse, \
-    AccessTokenResponse, ClientCredentialsGrantForm
+from app.models.authorization import AuthorizationCodeResponse, TokensResponse, ClientCredentialsForm, \
+    RefreshTokenGrantForm, AuthorizationCodeGrantForm, SignOutResponse, AccessTokenResponse
 from app.responses import get_error_response_example
+from app.tokens import get_tokens_data
 
-router: APIRouter = APIRouter()
+
+def __get_local_scope(scope: str) -> str:
+    """Get a local scope.
+
+    :param scope: Scope
+    :return: Local scope
+    """
+    return f"api://{os.getenv('AZURE_AUDIENCE')}/{scope}"
 
 
 async def __get_confidential_client_application(form: ClientCredentialsForm) -> ConfidentialClientApplication:
@@ -28,32 +33,8 @@ async def __get_confidential_client_application(form: ClientCredentialsForm) -> 
                                          )
 
 
-async def __get_tokens_data(access_token_response: dict) -> dict:
-    """Get tokens data.
-
-    :param access_token_response: Access token response
-    :return: Tokens data
-    :raises HTTPResponseException: If found an error in the access token response.
-    """
-    if "error" in access_token_response:
-        raise HTTPResponseException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={
-                "error_code": access_token_response.get("error"),
-                "error_description":
-                    re.split(": ", re.split("\r\n", access_token_response.get("error_description"), 1)[0], 1)[1]
-            }
-        )
-
-    return {
-        "data": {
-            "token_type": access_token_response.get("token_type"),
-            "access_token": access_token_response.get("access_token"),
-            "access_token_expiration": access_token_response.get("expires_in"),
-            "scope": access_token_response.get("scope"),
-            "refresh_token": access_token_response.get("refresh_token"),
-        }
-    }
+router: APIRouter = APIRouter()
+__scopes: List[str] = [__get_local_scope("access_as_user")]
 
 
 @router.get(
@@ -64,7 +45,6 @@ async def __get_tokens_data(access_token_response: dict) -> dict:
 async def get_authorization_url(
         client_id: str = Query(..., description="Client ID / Application ID"),
         redirect_uri: AnyHttpUrl = Query(..., description="Redirect URI"),
-        scopes: List[ScopeEnum] = Query(..., description="User consent scopes")
 ) -> dict:
     """
     Please open the returned authorization URL in a browser to authorize the specified application.
@@ -121,7 +101,8 @@ async def get_authorization_url(
                     <ul>
                         <li>
                             <b>invalid_client</b> - This error code will be presented if this web services application
-                            does not expose some scopes, please contact the system administrator.
+                            does not expose 'access_as_user' or 'access_as_application' scope, please contact
+                            the system administrator.
                         </li>
                         <li>
                             <b>interaction_required</b> - This error code will be presented if the end user is not
@@ -155,7 +136,7 @@ async def get_authorization_url(
     azure_client: PublicClientApplication = PublicClientApplication(client_id=client_id,
                                                                     authority=os.getenv("AZURE_AUTHORITY")
                                                                     )
-    authorization_code_flow: dict = azure_client.initiate_auth_code_flow(scopes=scopes, redirect_uri=redirect_uri)
+    authorization_code_flow: dict = azure_client.initiate_auth_code_flow(scopes=__scopes, redirect_uri=redirect_uri)
 
     return {
         "data": {
@@ -185,14 +166,14 @@ async def acquire_tokens_by_authorization_code(form: AuthorizationCodeGrantForm)
     azure_client: ConfidentialClientApplication = await __get_confidential_client_application(form)
     access_token_response: dict = azure_client.acquire_token_by_authorization_code(
         code=form.code,
-        scopes=form.scopes,
+        scopes=__scopes,
         redirect_uri=form.redirect_uri,
         data={
             "code_verifier": form.code_verifier
         }
     )
 
-    return await __get_tokens_data(access_token_response)
+    return await get_tokens_data(access_token_response)
 
 
 @router.post(
@@ -213,10 +194,10 @@ async def acquire_tokens_by_refresh_token(form: RefreshTokenGrantForm) -> dict:
     azure_client: ConfidentialClientApplication = await __get_confidential_client_application(form)
     access_token_response: dict = azure_client.acquire_token_by_refresh_token(
         refresh_token=form.refresh_token,
-        scopes=form.scopes
+        scopes=__scopes
     )
 
-    return await __get_tokens_data(access_token_response)
+    return await get_tokens_data(access_token_response)
 
 
 @router.get(
@@ -253,8 +234,8 @@ async def sign_out(
         )
     },
 )
-async def acquire_tokens_by_client_credentials(form: ClientCredentialsGrantForm) -> dict:
+async def acquire_tokens_by_client_credentials(form: ClientCredentialsForm) -> dict:
     azure_client: ConfidentialClientApplication = await __get_confidential_client_application(form)
-    access_token_response: dict = azure_client.acquire_token_for_client(scopes=form.scopes)
+    access_token_response: dict = azure_client.acquire_token_for_client(scopes=[__get_local_scope(".default")])
 
-    return await __get_tokens_data(access_token_response)
+    return await get_tokens_data(access_token_response)

@@ -18,8 +18,8 @@ from app.http_response_exception import HTTPResponseException
 class Mongo:
     """This class handles all MongoDB database operations.
     """
-    __database: str = None
-    __client: AsyncIOMotorClient = None
+    __database: str
+    __client: AsyncIOMotorClient
     __primary_key: dict = {}
 
     def __init__(self, host: str, port: int, database: str, username: str, password: str):

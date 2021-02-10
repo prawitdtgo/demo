@@ -7,7 +7,7 @@ from app.models.exception import ErrorResponse
 __response_details: dict = {
     status.HTTP_401_UNAUTHORIZED: {
         "error_code": "invalid_token",
-        "error_description": "The access token is invalid."
+        "error_description": "The access token was invalid."
     },
     status.HTTP_403_FORBIDDEN: {
         "error_code": "unauthorized_access",

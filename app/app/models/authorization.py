@@ -1,21 +1,7 @@
 import os
-from enum import Enum
-from typing import List
 
 from pydantic import Field, AnyHttpUrl, SecretStr
 from pydantic.main import BaseModel
-
-from app.authorization_scopes import get_local_scope, get_microsoft_graph_scope
-
-
-class ScopeEnum(str, Enum):
-    ACCESS_AS_USER = get_local_scope("access_as_user")
-    READ_USER_DATA = get_microsoft_graph_scope("User.Read")
-
-
-class DefaultScopeEnum(str, Enum):
-    LOCAL = get_local_scope(".default")
-    MICROSOFT_GRAPH = get_microsoft_graph_scope(".default")
 
 
 class AuthorizationCodeData(BaseModel):
@@ -55,24 +41,7 @@ class ClientCredentialsForm(BaseModel):
     client_secret: SecretStr = Field(..., title="Client secret")
 
 
-class ClientCredentialsGrantForm(ClientCredentialsForm):
-    scopes: List[DefaultScopeEnum] = Field(...,
-                                           title="A list of scopes",
-                                           description="The scopes must all be from a single resource.",
-                                           example=[
-                                               DefaultScopeEnum.LOCAL]
-                                           )
-
-
-class BaseGrantForm(ClientCredentialsForm):
-    scopes: List[ScopeEnum] = Field(...,
-                                    title="A list of scopes",
-                                    description="The scopes must all be from a single resource.",
-                                    example=[ScopeEnum.ACCESS_AS_USER]
-                                    )
-
-
-class AuthorizationCodeGrantForm(BaseGrantForm):
+class AuthorizationCodeGrantForm(ClientCredentialsForm):
     redirect_uri: AnyHttpUrl = Field(...,
                                      title="Redirect URI",
                                      description="The same redirect URI value that was used to acquire "
@@ -90,7 +59,7 @@ class AuthorizationCodeGrantForm(BaseGrantForm):
                                )
 
 
-class RefreshTokenGrantForm(BaseGrantForm):
+class RefreshTokenGrantForm(ClientCredentialsForm):
     refresh_token: str = Field(...,
                                title="Refresh token",
                                description="The refresh token that was received from "
