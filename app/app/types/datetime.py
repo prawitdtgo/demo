@@ -1,18 +1,16 @@
 from datetime import datetime
-from typing import Any
+from typing import Any, Generator
 
-import pytz
+from tzlocal import get_localzone
 
 
 class DatetimeStr(str):
     """This class handles converting a datetime to a string.
-
     """
 
     @classmethod
-    def __get_validators__(cls):
+    def __get_validators__(cls) -> Generator:
         """Get validators.
-
         """
         yield cls.validate
 
@@ -27,4 +25,4 @@ class DatetimeStr(str):
         if not isinstance(value, datetime):
             raise TypeError("%r is not a datetime." % value)
 
-        return value.astimezone(pytz.timezone("Asia/Bangkok")).isoformat(timespec="seconds")
+        return value.astimezone(get_localzone()).isoformat(timespec="seconds")

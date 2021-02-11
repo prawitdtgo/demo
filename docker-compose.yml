@@ -10,13 +10,19 @@ services:
       - API_VERSION=${API_VERSION}
       - API_PREFIX=${API_PREFIX}
       - API_BASE_URL=https://${HOST}${API_PREFIX}
-      - MONGO_HOST=mongo
-      - MONGO_DATABASE_NAME=demo
-      - MONGO_DATABASE_USERNAME_FILE=/run/secrets/mongo-application-username
-      - MONGO_DATABASE_PASSWORD_FILE=/run/secrets/mongo-application-password
+      - MONGO_MAIN_HOST=mongo
+      - MONGO_MAIN_PORT=27017
+      - MONGO_MAIN_DATABASE_NAME=demo
+      - MONGO_MAIN_DATABASE_USERNAME_FILE=/run/secrets/mongo-application-username
+      - MONGO_MAIN_DATABASE_PASSWORD_FILE=/run/secrets/mongo-application-password
+      - ALLOWED_ORIGIN=["http://localhost:8080"]
+      - AZURE_AUTHORITY=https://login.microsoftonline.com/ee64f829-1cc2-4fb2-996e-2e0fb78f5f29
+      - AZURE_AUDIENCE=d665ee86-da44-4d36-8d30-0ad2b5e16bde
+      - AZURE_AUDIENCE_SECRET_FILE=/run/secrets/azure-audience-secret
     secrets:
       - mongo-application-username
       - mongo-application-password
+      - azure-audience-secret
   mongo:
     build:
       context: .
@@ -47,6 +53,8 @@ secrets:
     file: mongodb-credentials/application-username.txt
   mongo-application-password:
     file: mongodb-credentials/application-password.txt
+  azure-audience-secret:
+    file: azure_audience_secret.txt
 networks:
   default:
     external: true

@@ -1,60 +1,101 @@
-import json
 from typing import Set
+from unittest import mock
 
-from fastapi.responses import JSONResponse
+import pytest
 
-from app.models.response import Message
-from app.responses import Response
+from app.models.exception import ErrorResponse
+from app.responses import get_responses, get_response_detail, get_error_response_example
 
 
-class TestResponse:
+@mock.patch('app.responses.__response_details', {
+    401: {
+        "error_code": "invalid_token",
+        "error_description": "The access token was invalid."
+    },
+    902: {
+        "error_code": "item_not_found",
+        "error_description": "The specified item was not found."
+    },
+    903: {
+        "error_code": "unauthorized_access",
+        "error_description": "There were insufficient privileges to complete the operation."
+    }
+})
+class TestResponses:
+    """This class handles all app.responses module test cases.
+    """
+
+    def test_getting_response_detail(self) -> None:
+        """Test getting a response detail.
+        """
+        assert get_response_detail(902) == {
+            "error_code": "item_not_found",
+            "error_description": "The specified item was not found."
+        }
+
+    def test_getting_response_detail_with_undefined_status_code(self) -> None:
+        """Test getting a response detail with an undefined status code.
+        """
+        status_code: int = 901
+        with pytest.raises(ValueError, match=f"The specified status code, {status_code}, is undefined."):
+            get_response_detail(status_code)
 
     def test_getting_responses(self) -> None:
         """Test getting responses.
-
         """
-        status_codes: Set[int] = set(Response.response_messages.keys())
-        result: dict = {}
-
-        for status_code in status_codes:
-            result[status_code] = {
-                "model": Message,
+        assert get_responses({401, 903}) == {
+            401: {
+                "model": ErrorResponse,
                 "content": {
-                    "application/json": {"example": {"message": Response.response_messages[status_code]}}}
+                    "application/json": {
+                        "example": {
+                            "detail": {
+                                "error_code": "invalid_token",
+                                "error_description": "The access token was invalid."
+                            }
+                        }
+                    }
+                }
+            },
+            903: {
+                "model": ErrorResponse,
+                "content": {
+                    "application/json": {
+                        "example": {
+                            "detail": {
+                                "error_code": "unauthorized_access",
+                                "error_description": "There were insufficient privileges to complete the operation."
+                            }
+                        }
+                    }
+                }
             }
-
-        assert Response.get_responses(status_codes) == result
+        }
 
     def test_getting_responses_with_undefined_status_codes(self) -> None:
         """Test getting responses with undefined status codes.
-
         """
-        status_codes: Set[int] = {1, 2, 3}
-        result: dict = {}
+        status_codes: Set[int] = {400, 403, 901}
 
-        for status_code in status_codes:
-            result[status_code] = {
-                "model": Message,
-                "content": {
-                    "application/json": {"example": {"message": ""}}}
+        with pytest.raises(ValueError, match=f"The specified status code, 400, is undefined."):
+            get_responses(status_codes)
+
+    def test_getting_error_response_example(self) -> None:
+        """Test getting an error response example.
+        """
+        error_code: str = "invalid_client"
+        error_description: str = "Invalid client secret is provided."
+
+        assert get_error_response_example(error_code=error_code, error_description=error_description) == {
+            "model": ErrorResponse,
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": {
+                            "error_code": error_code,
+                            "error_description": error_description
+                        }
+                    }
+                }
             }
-
-        assert Response.get_responses(status_codes) == result
-
-    def test_getting_json_response(self) -> None:
-        """Test getting a JSON response.
-
-        """
-        for status_code in Response.response_messages.keys():
-            response: JSONResponse = Response.get_json_response(status_code)
-            assert response.status_code == status_code
-            assert json.loads(response.body) == {"message": Response.response_messages[status_code]}
-
-    def test_getting_json_response_with_undefined_status_code(self) -> None:
-        """Test getting a JSON response with an undefined status code.
-
-        """
-        for status_code in {1, 2, 3}:
-            response: JSONResponse = Response.get_json_response(status_code)
-            assert response.status_code == status_code
-            assert json.loads(response.body) == {"message": ""}
+        }
