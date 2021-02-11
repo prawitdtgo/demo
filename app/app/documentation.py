@@ -1,4 +1,6 @@
-from typing import Final, TypeVar
+from typing import Final, TypeVar, Set
+
+from app.models.authorization import UserRole
 
 
 class GrantTypeRequest:
@@ -23,8 +25,24 @@ class GrantTypeRequest:
         return f"<p><b>Grant type request:</b> {self.__grant_type}</p>"
 
 
-class GrantType:
+class GrantTypeRequestSentence:
     """Grant type request sentence enumeration
     """
     CLIENT_CREDENTIALS: Final[str] = GrantTypeRequest("Client Credentials")
     AUTHORIZATION_CODE: Final[str] = GrantTypeRequest("Authorization Code")
+
+
+def get_accepted_user_roles_sentence(user_roles: Set[UserRole]) -> str:
+    """Get an accepted user role sentence.
+
+    :param user_roles: User roles
+    :return: Accepted user role sentence
+    """
+    accepted_user_roles: str = ""
+
+    for user_role in user_roles:
+        accepted_user_roles += user_role.value + ", "
+
+    accepted_user_roles = accepted_user_roles.rsplit(",", 1)[0]
+
+    return f"<p><b>Accepted user roles:</b> {accepted_user_roles}</p>"

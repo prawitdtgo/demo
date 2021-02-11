@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.routers import posts, users, authorization
+from app.routers import posts, users, authorization, contacts
 
 api_router = APIRouter()
 
@@ -11,13 +11,20 @@ api_router.include_router(
 )
 
 api_router.include_router(
+    router=users.router,
+    prefix="/users",
+    tags=["users"]
+)
+
+
+api_router.include_router(
     router=posts.router,
     prefix="/posts",
     tags=["posts"]
 )
 
 api_router.include_router(
-    router=users.router,
-    prefix="/users",
-    tags=["users"]
+    router=contacts.router,
+    prefix="/contacts",
+    tags=["contacts"]
 )

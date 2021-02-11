@@ -8,7 +8,7 @@ from fastapi.security import HTTPAuthorizationCredentials
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 from app.database_connections import databases
-from app.documentation import GrantType
+from app.documentation import GrantTypeRequestSentence
 from app.http_response_exception import HTTPResponseException
 from app.json_web_token import JsonWebToken
 from app.models.post import PostList, PostData, PostCreation, PostPreRelationships, PostUpdate
@@ -67,7 +67,7 @@ async def __prove_owner(authorization: HTTPAuthorizationCredentials, post_id: st
 @router.get(
     "",
     summary="Get posts sorting by updated time in descending order.",
-    description="Posts can be searched by message with regular expression." + GrantType.CLIENT_CREDENTIALS,
+    description="Posts can be searched by message with regular expression." + GrantTypeRequestSentence.CLIENT_CREDENTIALS,
     response_model=PostList,
     responses=main_endpoint_responses,
 )
@@ -99,7 +99,7 @@ async def get_posts(
     "",
     summary="Create a post.",
     status_code=status.HTTP_201_CREATED,
-    description=GrantType.AUTHORIZATION_CODE,
+    description=GrantTypeRequestSentence.AUTHORIZATION_CODE,
     response_model=PostData,
     responses=main_endpoint_responses,
 )
@@ -123,7 +123,7 @@ async def create_post(*,
 @router.get(
     "/{post_id}",
     summary="Get a post by post ID.",
-    description=GrantType.CLIENT_CREDENTIALS,
+    description=GrantTypeRequestSentence.CLIENT_CREDENTIALS,
     response_model=PostData,
     responses=subsidiary_endpoint_responses,
 )
@@ -142,8 +142,8 @@ async def get_post(
 
 @router.patch(
     "/{post_id}",
-    summary="Update a post by post ID.",
-    description=GrantType.AUTHORIZATION_CODE,
+    summary="Update an own post by post ID.",
+    description=GrantTypeRequestSentence.AUTHORIZATION_CODE,
     response_model=PostData,
     responses=subsidiary_endpoint_responses,
 )
@@ -164,8 +164,8 @@ async def update_post(
 
 @router.delete(
     "/{post_id}",
-    summary="Delete a post by post ID.",
-    description=GrantType.AUTHORIZATION_CODE,
+    summary="Delete an own post by post ID.",
+    description=GrantTypeRequestSentence.AUTHORIZATION_CODE,
     status_code=status.HTTP_204_NO_CONTENT,
     responses=subsidiary_endpoint_responses,
 )

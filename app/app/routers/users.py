@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from fastapi.security import HTTPAuthorizationCredentials
 
-from app.documentation import GrantType
+from app.documentation import GrantTypeRequestSentence
 from app.external_web_services import call_microsoft_graph_web_service
 from app.json_web_token import JsonWebToken
 from app.models.user import UserData
@@ -14,7 +14,7 @@ router = APIRouter()
 @router.get(
     "/me",
     summary="Get a signed-in user's profile.",
-    description=GrantType.AUTHORIZATION_CODE,
+    description=GrantTypeRequestSentence.AUTHORIZATION_CODE,
     responses=main_endpoint_responses,
     response_model=UserData
 )

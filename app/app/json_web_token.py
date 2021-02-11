@@ -1,7 +1,7 @@
 import base64
 import logging
 import os
-from typing import List, Union
+from typing import List, Union, Set
 
 import jwt
 from cryptography.hazmat.backends import default_backend
@@ -13,6 +13,7 @@ from jwt import ExpiredSignatureError, InvalidSignatureError, InvalidIssuerError
     MissingRequiredClaimError, DecodeError, ImmatureSignatureError, InvalidAudienceError
 
 from app.http_response_exception import HTTPResponseException
+from app.models.authorization import UserRole
 
 
 class JsonWebTokenException(Exception):
@@ -158,11 +159,11 @@ class JsonWebToken:
         return [] if roles is None else roles
 
     @classmethod
-    async def get_user_identifier(cls, access_token: str, accepted_role: str = None) -> str:
+    async def get_user_identifier(cls, access_token: str, accepted_roles: Set[UserRole] = None) -> str:
         """Get the user identifier from the specified access token.
 
         :param access_token: Access token
-        :param accepted_role: Accepted user role
+        :param accepted_roles: Accepted user roles
         :return: User identifier
         :raises HTTPResponseException: If the specified access token was invalid.
         """
@@ -171,7 +172,8 @@ class JsonWebToken:
         if "access_as_user" not in await cls.__get_scopes(decoded_access_token):
             raise HTTPResponseException(status_code=status.HTTP_403_FORBIDDEN)
 
-        if accepted_role is not None and accepted_role not in await cls.__get_roles(decoded_access_token):
+        if accepted_roles is not None \
+                and set(map(lambda x: x.value, accepted_roles)).isdisjoint(await cls.__get_roles(decoded_access_token)):
             raise HTTPResponseException(status_code=status.HTTP_403_FORBIDDEN)
 
         return decoded_access_token.get("oid")

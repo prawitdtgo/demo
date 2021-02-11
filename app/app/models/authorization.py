@@ -1,7 +1,14 @@
 import os
+from enum import Enum
 
 from pydantic import Field, AnyHttpUrl, SecretStr
 from pydantic.main import BaseModel
+
+
+class UserRole(str, Enum):
+    """User role enumeration
+    """
+    CONTACT_REPORT_VIEWER = "contacts_report_viewer"
 
 
 class AuthorizationCodeData(BaseModel):
