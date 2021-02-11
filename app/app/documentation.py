@@ -1,4 +1,4 @@
-from typing import Final, TypeVar, Set
+from typing import Final, TypeVar, Set, Union, Type
 
 from app.models.authorization import UserRole
 
@@ -32,7 +32,7 @@ class GrantTypeRequestSentence:
     AUTHORIZATION_CODE: Final[str] = GrantTypeRequest("Authorization Code")
 
 
-def get_accepted_user_roles_sentence(user_roles: Set[UserRole]) -> str:
+def get_accepted_user_roles_sentence(user_roles: Union[Set[UserRole], Type[UserRole]]) -> str:
     """Get an accepted user role sentence.
 
     :param user_roles: User roles

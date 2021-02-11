@@ -31,8 +31,8 @@ async def start_up() -> None:
 
 @router.get(
     "",
-    summary="Get posts sorting by created time in descending order.",
-    description="Posts can be searched by first name, last name, email, or message with regular expression."
+    summary="Get contacts sorting by created time in descending order.",
+    description="Contacts can be searched by first name, last name, email, or message with regular expression."
                 + GrantTypeRequestSentence.AUTHORIZATION_CODE
                 + get_accepted_user_roles_sentence({UserRole.CONTACT_REPORT_VIEWER}),
     response_model=ContactList,

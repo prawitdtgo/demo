@@ -10,13 +10,15 @@ from starlette.staticfiles import StaticFiles
 from starlette.templating import Jinja2Templates
 
 from app.database_connections import databases
+from app.documentation import get_accepted_user_roles_sentence
 from app.json_web_token import JsonWebToken, JsonWebTokenException
+from app.models.authorization import UserRole
 from app.routers.apis import api_router
 
 api_prefix: str = os.getenv("API_PREFIX")
 swagger_favicon_url: str = "https://fastapi.tiangolo.com/img/favicon.png"
 templates: Jinja2Templates = Jinja2Templates(directory="/app/templates")
-
+all_user_roles: str = get_accepted_user_roles_sentence(UserRole)
 app: FastAPI = FastAPI(
     title="Demo App",
     description="<p>All web services except the web services in the authorization section "
@@ -25,6 +27,7 @@ app: FastAPI = FastAPI(
                 "An Authorization header is a token type plus a space and an access token."
                 "</font></p>"
                 "<p>An access token can be acquired from the web services in the authorization section below.</p>"
+                f"{all_user_roles}"
                 "<hr><br>"
                 "These are abbreviations in this documentation."
                 "<ol>"
