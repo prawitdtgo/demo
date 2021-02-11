@@ -2,7 +2,10 @@
 .gitattributes
 .gitignore
 /.idea
-**/__pycache__
+**/.pytest_cache
 /mongodb-credentials
 /reverse-proxy
 /docker-registry
+/node_modules
+/app/assets/public
+azure_audience_secret.txt

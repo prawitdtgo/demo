@@ -4,15 +4,16 @@ from mongodb_migrations.base import BaseMigration
 
 
 class Migration(BaseMigration):
-    COLLECTION: Final[str] = "user"
+    """This class handles migrating a MongoDB collection.
+    """
+    COLLECTION: Final[str] = "post"
 
     def upgrade(self):
         """Upgrade the collection.
         """
         collection = self.db.create_collection(self.COLLECTION)
-        collection.create_index("email", unique=True)
-        collection.create_index("first_name")
-        collection.create_index("last_name")
+        collection.create_index("owner")
+        collection.create_index("message")
         collection.create_index("updated_at")
 
     def downgrade(self):

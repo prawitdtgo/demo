@@ -1,2 +1,6 @@
 /.idea
 **/__pycache__
+**/.pytest_cache
+/node_modules
+/app/assets/public
+azure_audience_secret.txt

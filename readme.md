@@ -41,6 +41,8 @@ database migration system. It supports deploying with Docker.
     For production environment, you should grant permission of those credential files to users whom can run docker and
    docker-compose commands only.
 
+1. Fill the Azure audience secret in ./azure_audience_secret.txt.
+
 1. Set up your DNS name following HOST environment's value in /.env.
 
     You can set your local DNS in development environment.
@@ -87,12 +89,13 @@ Run the following command steps by steps.
 
 1. `docker-compose build`
 1. `docker-compose push`
-1. `docker-compose -f docker-compose.yml -f docker-stack.yml -f docker-stack.development.yml config | docker stack deploy -c - <stack name>`
-   command.
+1. `docker-compose -f docker-compose.yml -f docker-stack.yml -f docker-stack.development.yml config 
+   | docker stack deploy -c - <stack name>` command.
 
     For example:
 
-    > docker-compose -f docker-compose.yml -f docker-stack.yml -f docker-stack.development.yml config | docker stack deploy -c - demo
+    > docker-compose -f docker-compose.yml -f docker-stack.yml -f docker-stack.development.yml config 
+   | docker stack deploy -c - demo
 
 #### To uninstall this application.
 
@@ -141,11 +144,18 @@ For example:
 
 ---
 
-## How to see MongoDB database migrations usage.
+## For developers:
+There are some helpful commands for all of you.
 
+All commands have --help option to see how to use that command.
+
+### Create a MongoDB migration script file.
 Run `docker exec $(docker ps --filter "name=<stack name>_app" --filter "status=running" -q -l)
-python /app/mongodb-migrations.py --help` command in your Windows PowerShell or your Linux terminal.
+python /app/mongodb-migration-creation-command/create_migration_script.py <filename>` command in your Windows PowerShell
+or your Linux terminal. The system will create a migration script file with a current date and time prefix.
+The created migration script file will have a ready code for writing a migration script.
 
 For example:
 
-> docker exec $(docker ps --filter "name=demo_app" --filter "status=running" -q -l) python /app/mongodb-migrations.py --help
+> docker exec $(docker ps --filter "name=demo_app" --filter "status=running" -q -l)
+python /app/mongodb-migration-creation-command/create_migration_script.py create_contact_collection
