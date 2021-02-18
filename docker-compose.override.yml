@@ -2,7 +2,12 @@ version: '3.8'
 services:
   app:
     volumes:
-      - ./app:/app
+      - ./app/app:/app/app
+      - ./app/assets/css:/app/assets/css
+      - ./app/assets/scss:/app/assets/scss
+      - ./app/mongodb-migrations:/app/mongodb-migrations
+      - ./app/templates:/app/templates
+      - ./app/tests:/app/tests
     command: /start-reload.sh
     labels:
       - traefik.enable=true
