@@ -145,11 +145,21 @@ For example:
 ---
 
 ## For developers:
+
+### To test CSS/SCSS files without rebuilding the app service's image.
+1. Check whether you have [NodeJS](https://nodejs.org/en) in your computer.
+   If you do not have it, please install it first.
+1. Mount the volume of ./app/assets:/app/assets into the app service in the docker-compose.override.yml.
+1. Run `docker-compose up -d` command.   
+1. Run `npm install` command.
+1. Run `npx mix watch` command to automatically recompile the files and rebuild your bundle.
+
+### Helpful commands:
 There are some helpful commands for all of you.
 
 All commands have --help option to see how to use that command.
 
-### Create a MongoDB migration script file.
+#### Create a MongoDB migration script file.
 Run `docker exec $(docker ps --filter "name=<stack name>_app" --filter "status=running" -q -l)
 python /app/mongodb-migration-creation-command/create_migration_script.py <filename>` command in your Windows PowerShell
 or your Linux terminal. The system will create a migration script file with a current date and time prefix.
