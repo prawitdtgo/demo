@@ -149,9 +149,11 @@ For example:
 ### To test CSS/SCSS files without rebuilding the app service's image.
 1. Check whether you have [NodeJS](https://nodejs.org/en) in your computer.
    If you do not have it, please install it first.
-1. Mount the volume of ./app/assets:/app/assets into the app service in the docker-compose.override.yml.
-1. Run `docker-compose up -d` command.   
-1. Run `npm install` command.
+1. Mount **./app/assets:/app/assets** volume into the app service in the docker-compose.override.yml
+   or the docker-stack.development.yml depends on you deploy with docker-compose or docker stack command.
+1. Run `docker-compose up -d` or `docker-compose -f docker-compose.yml -f docker-stack.yml 
+   -f docker-stack.development.yml config | docker stack deploy -c - <stack name>` command.
+1. Run `npm install` command to install all JavaScript libraries.
 1. Run `npx mix watch` command to automatically recompile the files and rebuild your bundle.
 
 ### Helpful commands:
