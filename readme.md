@@ -1,7 +1,8 @@
 # Demo App
 
-This is a demonstration application that includes FastAPI framework, MongoDB database connections, and a MongoDB
-database migration system. It supports deploying with Docker.
+This is a demonstration application that includes FastAPI framework, MongoDB database connections, a MongoDB
+database migration system, and an authorization system with Microsoft Azure Active Directory Identity.
+It supports deploying with Docker.
 
 ---
 
@@ -33,7 +34,7 @@ database migration system. It supports deploying with Docker.
 
     This application will create a root role user and an application user in a fresh installation.
 
-    * Fill your root username in ./mongodb-credentials/root-username.txt
+    * Fill your root username in ./mongodb-credentials/root-username.txt.
     * Fill your root password in ./mongodb-credentials/root-password.txt.
     * Fill your application username in ./mongodb-credentials/application-username.txt.
     * Fill your application password in ./mongodb-credentials/application-password.txt.
@@ -90,7 +91,7 @@ Run the following command steps by steps.
 1. `docker-compose build`
 1. `docker-compose push`
 1. `docker-compose -f docker-compose.yml -f docker-stack.yml -f docker-stack.development.yml config 
-   | docker stack deploy -c - <stack name>` command.
+   | docker stack deploy -c - <stack name>`
 
     For example:
 
@@ -112,7 +113,7 @@ Run the following command steps by steps.
 
 1. `docker-compose build`
 1. `docker-compose push`
-1. `docker-compose -f docker-compose.yml -f docker-stack.yml config | docker stack deploy -c - <stack name>` command.
+1. `docker-compose -f docker-compose.yml -f docker-stack.yml config | docker stack deploy -c - <stack name>`
 
     For example:
 
@@ -145,11 +146,23 @@ For example:
 ---
 
 ## For developers:
+
+### To test CSS/SCSS files without rebuilding the app service's image.
+1. Check whether you have [NodeJS](https://nodejs.org/en) in your computer.
+   If you do not have it, please install it first.
+1. Mount **./app/assets:/app/assets** volume into the app service in the docker-compose.override.yml
+   or the docker-stack.development.yml depends on you deploy with docker-compose or docker stack command.
+1. Run `docker-compose up -d` or `docker-compose -f docker-compose.yml -f docker-stack.yml 
+   -f docker-stack.development.yml config | docker stack deploy -c - <stack name>` command.
+1. Run `npm install` command to install all JavaScript libraries.
+1. Run `npx mix watch` command to automatically recompile the files and rebuild your bundle.
+
+### Helpful commands:
 There are some helpful commands for all of you.
 
 All commands have --help option to see how to use that command.
 
-### Create a MongoDB migration script file.
+#### Create a MongoDB migration script file.
 Run `docker exec $(docker ps --filter "name=<stack name>_app" --filter "status=running" -q -l)
 python /app/mongodb-migration-creation-command/create_migration_script.py <filename>` command in your Windows PowerShell
 or your Linux terminal. The system will create a migration script file with a current date and time prefix.
