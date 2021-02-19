@@ -1,7 +1,8 @@
 # Demo App
 
-This is a demonstration application that includes FastAPI framework, MongoDB database connections, and a MongoDB
-database migration system. It supports deploying with Docker.
+This is a demonstration application that includes FastAPI framework, MongoDB database connections, a MongoDB
+database migration system, and an authorization system with Microsoft Azure Active Directory Identity.
+It supports deploying with Docker.
 
 ---
 
@@ -33,7 +34,7 @@ database migration system. It supports deploying with Docker.
 
     This application will create a root role user and an application user in a fresh installation.
 
-    * Fill your root username in ./mongodb-credentials/root-username.txt
+    * Fill your root username in ./mongodb-credentials/root-username.txt.
     * Fill your root password in ./mongodb-credentials/root-password.txt.
     * Fill your application username in ./mongodb-credentials/application-username.txt.
     * Fill your application password in ./mongodb-credentials/application-password.txt.
@@ -90,7 +91,7 @@ Run the following command steps by steps.
 1. `docker-compose build`
 1. `docker-compose push`
 1. `docker-compose -f docker-compose.yml -f docker-stack.yml -f docker-stack.development.yml config 
-   | docker stack deploy -c - <stack name>` command.
+   | docker stack deploy -c - <stack name>`
 
     For example:
 
@@ -112,7 +113,7 @@ Run the following command steps by steps.
 
 1. `docker-compose build`
 1. `docker-compose push`
-1. `docker-compose -f docker-compose.yml -f docker-stack.yml config | docker stack deploy -c - <stack name>` command.
+1. `docker-compose -f docker-compose.yml -f docker-stack.yml config | docker stack deploy -c - <stack name>`
 
     For example:
 
