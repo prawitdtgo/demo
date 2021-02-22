@@ -1,6 +1,3 @@
-import logging
-import math
-from datetime import datetime
 from typing import Type, List, Tuple, Any, Optional, Set
 
 import pymongo
@@ -12,15 +9,15 @@ from pydantic import BaseModel
 from pymongo.errors import PyMongoError
 from pymongo.results import InsertOneResult, UpdateResult, DeleteResult
 
+from app.abstract_database import AbstractDatabase, DataList, Data
 from app.http_response_exception import HTTPResponseException
 
 
-class Mongo:
+class Mongo(AbstractDatabase):
     """This class handles all MongoDB database operations.
     """
     __database: str
     __client: AsyncIOMotorClient
-    __primary_key: dict = {}
 
     def __init__(self, host: str, port: int, database: str, username: str, password: str):
         """Open a database connection.
@@ -31,6 +28,8 @@ class Mongo:
         :param username: Username
         :param password: Password
         """
+        super().__init__(host, port, database, username, password)
+
         self.__database = database
         self.__client = AsyncIOMotorClient(host=host,
                                            port=port,
@@ -51,7 +50,7 @@ class Mongo:
         :param primary_key: Primary key name
         :return: Collection reference
         """
-        self.__primary_key[collection] = primary_key
+        await self._set_primary_key_pair(collection, primary_key)
 
         return self.__client[self.__database][collection]
 
@@ -91,38 +90,22 @@ class Mongo:
         return projection
 
     @classmethod
-    async def __get_primary_key_pair(cls, collection: AsyncIOMotorCollection, identifier: str) -> dict:
+    async def _get_primary_key_pair(cls, collection: AsyncIOMotorCollection, identifier: str) -> dict:
         """Get the primary key pair of the specified collection reference.
 
         :param collection: Collection reference
         :param identifier: Identifier
         :return: A pair of primary key name and primary key value
         """
-        primary_key = cls.__primary_key[collection.name]
+        primary_key = cls._primary_key[collection.name]
 
         return {primary_key: ObjectId(identifier) if primary_key == "_id" else identifier}
 
     @classmethod
-    async def __handle_database_server_error(cls, database_server_error: PyMongoError) -> None:
-        """Log and raise a database server error.
-
-        :param database_server_error: Database server error
-        :raises HTTPResponseException: If there were some errors during the database operation.
-        """
-        logging.error(database_server_error.__str__())
-
-        raise HTTPResponseException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    @classmethod
     async def list(cls, collection: AsyncIOMotorCollection, projection_model: Type[BaseModel], request: Request,
                    page: int, records_per_page: int, search_fields: Set[str], keyword: Optional[str] = None,
-                   sort: Optional[List[Tuple[str, int]]] = None) -> dict:
+                   sort: Optional[List[Tuple[str, int]]] = None) -> DataList:
         """List documents.
-
-        The following attributes below will be returned.
-            * data - A list of documents
-            * links - Pagination links
-            * meta - Meta information
 
         :param collection: Collection reference
         :param projection_model: Projection model
@@ -148,33 +131,19 @@ class Mongo:
                 limit=records_per_page,
                 projection=await cls.__get_projection(projection_model)
             )
-            total_records: int = await collection.count_documents(query)
-            last_page: int = math.ceil(total_records / records_per_page) if total_records > 0 else 1
-            url: str = str(request.url).split("?")[0]
-            link_parameters: str = "?page={}&records_per_page=" + str(records_per_page)
+            pagination: dict = await cls._get_pagination(request, page, records_per_page,
+                                                         await collection.count_documents(query)
+                                                         )
 
-            return {
-                "data": await documents.to_list(length=records_per_page),
-                "links": {
-                    "first_page": url + link_parameters.format(1),
-                    "last_page": url + link_parameters.format(last_page),
-                    "previous_page": url + link_parameters.format(page - 1) if page > 1 else None,
-                    "next_page": url + link_parameters.format(page + 1) if page < last_page else None,
-                },
-                "meta": {
-                    "current_page": page,
-                    "last_page": last_page,
-                    "total_records": total_records,
-                    "records_per_page": records_per_page,
-                    "url": url
-                }
-            }
+            pagination.update({"data": await documents.to_list(length=records_per_page)})
+
+            return pagination
         except PyMongoError as database_server_error:
-            await cls.__handle_database_server_error(database_server_error)
+            await cls._handle_database_server_error(database_server_error)
 
     @classmethod
     async def create(cls, collection: AsyncIOMotorCollection, information: dict,
-                     projection_model: Type[BaseModel]) -> dict:
+                     projection_model: Type[BaseModel]) -> Data:
         """Create a document.
 
         :param collection: Collection reference
@@ -183,17 +152,17 @@ class Mongo:
         :return: Created document
         :raises HTTPResponseException: If there were some errors during the database operation.
         """
-        information["created_at"] = information["updated_at"] = datetime.utcnow()
+        information["created_at"] = information["updated_at"] = await cls._get_current_time()
 
         try:
             result: InsertOneResult = await collection.insert_one(information)
 
             return await cls.get(collection, result.inserted_id, projection_model)
         except PyMongoError as database_server_error:
-            await cls.__handle_database_server_error(database_server_error)
+            await cls._handle_database_server_error(database_server_error)
 
     @classmethod
-    async def get(cls, collection: AsyncIOMotorCollection, identifier: Any, projection_model: Type[BaseModel]) -> dict:
+    async def get(cls, collection: AsyncIOMotorCollection, identifier: Any, projection_model: Type[BaseModel]) -> Data:
         """Get a document by identifier.
 
         :param collection: Collection reference
@@ -204,7 +173,7 @@ class Mongo:
          or the specified document was not found.
         """
         try:
-            document: dict = await collection.find_one(await cls.__get_primary_key_pair(collection, identifier),
+            document: dict = await collection.find_one(await cls._get_primary_key_pair(collection, identifier),
                                                        projection=await cls.__get_projection(projection_model)
                                                        )
 
@@ -213,12 +182,14 @@ class Mongo:
 
             return {"data": document}
         except PyMongoError as database_server_error:
-            await cls.__handle_database_server_error(database_server_error)
+            await cls._handle_database_server_error(database_server_error)
 
     @classmethod
     async def update(cls, collection: AsyncIOMotorCollection, identifier: Any, information: dict,
-                     projection_model: Type[BaseModel]) -> dict:
+                     projection_model: Type[BaseModel]) -> Data:
         """Update a document. Skip all fields that have None value.
+
+        The updated_at field will be updated if only there are some changed fields.
 
         :param collection: Collection reference
         :param identifier: Identifier
@@ -231,15 +202,17 @@ class Mongo:
 
         try:
             if bool(updated_information):
-                primary_key_pair: dict = await cls.__get_primary_key_pair(collection, identifier)
+                primary_key_pair: dict = await cls._get_primary_key_pair(collection, identifier)
                 result: UpdateResult = await collection.update_one(primary_key_pair, {"$set": updated_information})
 
                 if result.modified_count == 1:
-                    await collection.update_one(primary_key_pair, {"$set": {"updated_at": datetime.utcnow()}})
+                    await collection.update_one(primary_key_pair,
+                                                {"$set": {"updated_at": await cls._get_current_time()}}
+                                                )
 
             return await cls.get(collection, identifier, projection_model)
         except PyMongoError as database_server_error:
-            await cls.__handle_database_server_error(database_server_error)
+            await cls._handle_database_server_error(database_server_error)
 
     @classmethod
     async def delete(cls, collection: AsyncIOMotorCollection, identifier: Any) -> None:
@@ -250,9 +223,9 @@ class Mongo:
         :raises HTTPResponseException: If there were some errors during the database operation.
         """
         try:
-            result: DeleteResult = await collection.delete_one(await cls.__get_primary_key_pair(collection, identifier))
+            result: DeleteResult = await collection.delete_one(await cls._get_primary_key_pair(collection, identifier))
 
             if result.deleted_count == 0:
                 raise HTTPResponseException(status_code=status.HTTP_404_NOT_FOUND)
         except PyMongoError as database_server_error:
-            await cls.__handle_database_server_error(database_server_error)
+            await cls._handle_database_server_error(database_server_error)
