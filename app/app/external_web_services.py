@@ -18,9 +18,9 @@ async def __get_microsoft_graph_authorization_header() -> str:
     :raises HTTPResponseException: If could not get an access token for calling a Microsoft Graph web service.
     """
     azure_client: ConfidentialClientApplication = ConfidentialClientApplication(
-        client_id=os.getenv("AZURE_AUDIENCE"),
-        client_credential=await get_file_environment("AZURE_AUDIENCE_SECRET_FILE"),
-        authority=os.getenv("AZURE_AUTHORITY")
+        client_id=os.getenv("AZURE_AD_AUDIENCE"),
+        client_credential=await get_file_environment("AZURE_AD_AUDIENCE_SECRET_FILE"),
+        authority=os.getenv("AZURE_AD_AUTHORITY")
     )
     access_token_response: dict = azure_client.acquire_token_for_client(scopes=["https://graph.microsoft.com/.default"])
 
