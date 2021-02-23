@@ -96,7 +96,7 @@ class JsonWebToken:
         :raises JsonWebTokenException: If found an exception.
         """
         configuration: dict = await cls.__get_azure_configuration(
-            f"{os.getenv('AZURE_AUTHORITY')}/v2.0/.well-known/openid-configuration")
+            f"{os.getenv('AZURE_AD_AUTHORITY')}/v2.0/.well-known/openid-configuration")
         cls.__issuer = configuration.get("issuer")
         cls.__public_keys = (await cls.__get_azure_configuration(configuration.get("jwks_uri"))).get("keys")
 
@@ -114,7 +114,7 @@ class JsonWebToken:
             return jwt.decode(jwt=access_token,
                               key=await cls.__get_public_key(header.get("kid")),
                               algorithms=[header.get("alg")],
-                              audience=os.getenv("AZURE_AUDIENCE"),
+                              audience=os.getenv("AZURE_AD_AUDIENCE"),
                               issuer=cls.__issuer,
                               options={
                                   "require_exp": True,

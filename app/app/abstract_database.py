@@ -154,7 +154,7 @@ class AbstractDatabase(ABC):
     async def list(cls, collection: Any, projection_model: Type[BaseModel], request: Request,
                    page: int, records_per_page: int, search_fields: Set[str], keyword: Optional[str] = None,
                    sort: Optional[List[Tuple[str, int]]] = None) -> DataList:
-        """List documents.
+        """List documents/records.
 
         :param collection: Collection/Table reference
         :param projection_model: Projection model
@@ -172,7 +172,7 @@ class AbstractDatabase(ABC):
     @classmethod
     @abstractmethod
     async def create(cls, collection: Any, information: dict, projection_model: Type[BaseModel]) -> Data:
-        """Create a document.
+        """Create a document/record.
 
         :param collection: Collection/Table reference
         :param information: Information to create
@@ -185,14 +185,14 @@ class AbstractDatabase(ABC):
     @classmethod
     @abstractmethod
     async def get(cls, collection: Any, identifier: Any, projection_model: Type[BaseModel]) -> Data:
-        """Get a document by identifier.
+        """Get a document/record by identifier.
 
         :param collection: Collection/Table reference
         :param identifier: Identifier
         :param projection_model: Projection model
         :return: Document/Record
         :raises HTTPResponseException: If there were some errors during the database operation
-         or the specified document was not found.
+         or the specified document/record was not found.
         """
         pass
 
@@ -200,7 +200,7 @@ class AbstractDatabase(ABC):
     @abstractmethod
     async def update(cls, collection: Any, identifier: Any, information: dict,
                      projection_model: Type[BaseModel]) -> Data:
-        """Update a document. Skip all fields that have None value.
+        """Update a document/record. Skip all fields that have None value.
 
         The updated_at field will be updated if only there are some changed fields.
 
@@ -208,7 +208,7 @@ class AbstractDatabase(ABC):
         :param identifier: Identifier
         :param information: Information to update
         :param projection_model: Projection model
-        :return: Updated document
+        :return: Updated document/record
         :raises HTTPResponseException: If there were some errors during the database operation.
         """
         pass
@@ -216,7 +216,7 @@ class AbstractDatabase(ABC):
     @classmethod
     @abstractmethod
     async def delete(cls, collection: Any, identifier: Any) -> None:
-        """Delete a document.
+        """Delete a document/record.
 
         :param collection: Collection/Table reference
         :param identifier: Identifier
