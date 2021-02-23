@@ -56,6 +56,7 @@ It supports deploying with Docker.
 
 **Note:** For production environment, you should grant permission of all credential files to users whom can run docker
 and docker-compose commands only.
+
 ---
 
 ## To deploy with docker-compose command.
