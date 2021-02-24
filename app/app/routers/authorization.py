@@ -18,7 +18,7 @@ def __get_local_scope(scope: str) -> str:
     :param scope: Scope
     :return: Local scope
     """
-    return f"api://{os.getenv('AZURE_AUDIENCE')}/{scope}"
+    return f"api://{os.getenv('AZURE_AD_AUDIENCE')}/{scope}"
 
 
 async def __get_confidential_client_application(form: ClientCredentialsForm) -> ConfidentialClientApplication:
@@ -29,7 +29,7 @@ async def __get_confidential_client_application(form: ClientCredentialsForm) -> 
     """
     return ConfidentialClientApplication(client_id=form.client_id,
                                          client_credential=form.client_secret.get_secret_value(),
-                                         authority=os.getenv("AZURE_AUTHORITY"),
+                                         authority=os.getenv("AZURE_AD_AUTHORITY"),
                                          )
 
 
@@ -134,7 +134,7 @@ async def get_authorization_url(
     </table>
     """
     azure_client: PublicClientApplication = PublicClientApplication(client_id=client_id,
-                                                                    authority=os.getenv("AZURE_AUTHORITY")
+                                                                    authority=os.getenv("AZURE_AD_AUTHORITY")
                                                                     )
     authorization_code_flow: dict = azure_client.initiate_auth_code_flow(scopes=__scopes, redirect_uri=redirect_uri)
 
@@ -209,7 +209,7 @@ async def acquire_tokens_by_refresh_token(form: RefreshTokenGrantForm) -> dict:
 async def sign_out(
         redirect_uri: Optional[AnyHttpUrl] = Query(None, description="Redirect URI", example="http://localhost:8080")
 ) -> dict:
-    sign_out_url: str = f"{os.getenv('AZURE_AUTHORITY')}/oauth2/v2.0/logout"
+    sign_out_url: str = f"{os.getenv('AZURE_AD_AUTHORITY')}/oauth2/v2.0/logout"
 
     if redirect_uri is not None:
         sign_out_url += f"?post_logout_redirect_uri={redirect_uri}"

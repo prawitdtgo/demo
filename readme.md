@@ -9,12 +9,12 @@ It supports deploying with Docker.
 ## Prerequisites.
 
 1. Implement a reverse proxy.
-    1. Copy your certificate into ./reverse-proxy/certificates and name it as dtgo.com.crt.
-    1. Copy your certificate's private key into ./reverse-proxy/certificates and name it as dtgo.com.key.
-    1. Set up a reverse proxy.
-        * Run `docker-compose -f ./reverse-proxy/docker-compose.yml up -d` command if you deploy with docker-compose
+      1. Copy your certificate into ./reverse-proxy/certificates and name it as dtgo.com.crt.
+      1. Copy your certificate's private key into ./reverse-proxy/certificates and name it as dtgo.com.key.
+      1. Set up a reverse proxy.
+         * Run `docker-compose -f ./reverse-proxy/docker-compose.yml up -d` command if you deploy with docker-compose
            command.
-        * Run
+         * Run
            `docker stack deploy -c ./reverse-proxy/docker-compose.yml -c reverse-proxy/docker-stack.yml <stack name>`
            command if you deploy with docker stack command.
 
@@ -24,31 +24,38 @@ It supports deploying with Docker.
 
 1. Create a local registry server if you deploy with docker stack command.
 
-    Run `docker stack deploy -c ./docker-registry/docker-stack.yml <stack name>` command.
+      Run `docker stack deploy -c ./docker-registry/docker-stack.yml <stack name>` command.
 
-    For example:
+      For example:
 
-    > docker stack deploy -c ./docker-registry/docker-stack.yml local-registry
+      > docker stack deploy -c ./docker-registry/docker-stack.yml local-registry
 
-1. Set up MongoDB credentials.
+1. Set up the MongoDB credentials.
 
-    This application will create a root role user and an application user in a fresh installation.
+      This application will create a root role user and an application user in a fresh installation.
 
-    * Fill your root username in ./mongodb-credentials/root-username.txt.
-    * Fill your root password in ./mongodb-credentials/root-password.txt.
-    * Fill your application username in ./mongodb-credentials/application-username.txt.
-    * Fill your application password in ./mongodb-credentials/application-password.txt.
+      * Fill your root username in ./mongodb-credentials/root-username.txt.
+      * Fill your root password in ./mongodb-credentials/root-password.txt.
+      * Fill your application username in ./mongodb-credentials/application-username.txt.
+      * Fill your application password in ./mongodb-credentials/application-password.txt.
 
-    For production environment, you should grant permission of those credential files to users whom can run docker and
-   docker-compose commands only.
+1. Set up the Microsoft Azure Active Directory's protected web services application.
+   
+      After this, Azure AD will be stood for Microsoft Azure Active Directory.
 
-1. Fill the Azure audience secret in ./azure_audience_secret.txt.
+      * Replace AZURE_AD_AUTHORITY environment in the docker-compose.yml file's app service with your Azure AD authority.
+      * Replace AZURE_AD_AUDIENCE environment in the docker-compose.yml file's app service with your Azure AD audience
+        which is your protected web service application ID.
+      * Fill your Azure AD audience secret in ./azure_audience_secret.txt.
 
-1. Set up your DNS name following HOST environment's value in /.env.
+1. Set up the DNS name following the HOST environment's value in /.env.
 
-    You can set your local DNS in development environment.
+      You can set your local DNS in development environment.
 
-    For Windows example, append `127.0.0.1 web-services.dtgo.com` to C:\Windows\System32\drivers\etc\hosts.
+      For Windows example, append `127.0.0.1 web-services.dtgo.com` to C:\Windows\System32\drivers\etc\hosts.
+
+**Note:** For production environment, you should grant permission of all credential files to users whom can run docker
+and docker-compose commands only.
 
 ---
 
@@ -132,13 +139,13 @@ For example:
 
 1. Run the following command below in your Windows PowerShell or your Linux terminal to roll back your database first.
 
-    `docker exec $(docker ps --filter "name=<stack name>_app" --filter "status=running" -q -l)
-    python /app/mongodb-migrations.py --action rollback`
+      `docker exec $(docker ps --filter "name=<stack name>_app" --filter "status=running" -q -l)
+   python /app/mongodb-migrations.py --action rollback`
 
-    For example:
+      For example:
 
-    > docker exec $(docker ps --filter "name=demo_app" --filter "status=running" -q -l)
-    python /app/mongodb-migrations.py --action rollback
+      > docker exec $(docker ps --filter "name=demo_app" --filter "status=running" -q -l)
+   python /app/mongodb-migrations.py --action rollback
 
 1. Check out to your previous version.
 1. Update your application again.
@@ -150,8 +157,8 @@ For example:
 ### To test CSS/SCSS files without rebuilding the app service's image.
 1. Check whether you have [NodeJS](https://nodejs.org/en) in your computer.
    If you do not have it, please install it first.
-1. Mount **./app/assets:/app/assets** volume into the app service in the docker-compose.override.yml
-   or the docker-stack.development.yml depends on you deploy with docker-compose or docker stack command.
+1. Mount **./app/assets:/app/assets** volume into the docker-compose.override.yml/docker-stack.development.yml file's
+   app service depends on you deploy with docker-compose or docker stack command.
 1. Run `docker-compose up -d` or `docker-compose -f docker-compose.yml -f docker-stack.yml 
    -f docker-stack.development.yml config | docker stack deploy -c - <stack name>` command.
 1. Run `npm install` command to install all JavaScript libraries.
